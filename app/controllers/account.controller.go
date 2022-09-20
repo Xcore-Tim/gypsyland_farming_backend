@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"gypsyland_farming/app/services"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,15 @@ func NewAccountRequestTaskController(
 	}
 }
 
+func (ctrl AccountRequestController) test(ctx *gin.Context) {
+	username := ctx.PostForm("username")
+	password := ctx.PostForm("password")
+	ctx.JSON(http.StatusOK, gin.H{"username": username, "password": password})
+}
+
 func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
+
+	rg.POST("/test", ctrl.test)
 
 	accountRequestGroup := rg.Group("/accountRequests")
 
