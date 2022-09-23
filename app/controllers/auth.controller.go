@@ -23,6 +23,11 @@ type AuthController struct {
 	TeamService services.TeamService
 }
 
+type AuthRequestData struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func NewAuthController(authService services.AuthService, jwtService services.JWTService, teamService services.TeamService) AuthController {
 	return AuthController{
 		AuthService: authService,
@@ -31,20 +36,23 @@ func NewAuthController(authService services.AuthService, jwtService services.JWT
 	}
 }
 
-func (auc AuthController) Login(ctx *gin.Context) {
+func (ctrl AuthController) Login(ctx *gin.Context) {
 
-	var authResponse models.AuthResponse
+	var authResponse models.AuthRequestData
 	client := &http.Client{}
 
 	endpoint := "/v1/accounts/auth"
 	urlPath := models.Basepath + endpoint
 
-	username := ctx.Request.PostFormValue("username")
-	password := ctx.Request.PostFormValue("password")
+	var authData AuthRequestData
+
+	if err := ctx.ShouldBindJSON(&authData); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 
 	requestBody, _ := json.Marshal(map[string]string{
-		"email":    username,
-		"password": password,
+		"email":    authData.Email,
+		"password": authData.Password,
 	})
 
 	bodyReader := bytes.NewBuffer(requestBody)
@@ -76,111 +84,50 @@ func (auc AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	var userIdentity models.UserIdentity
+	var userData models.UserData
 
-	if err = json.Unmarshal([]byte(body), &userIdentity); err != nil {
+	if err = json.Unmarshal([]byte(body), &userData); err != nil {
 		DenyAuthentication(&authResponse, err, ctx)
 		return
 	}
 
 	var userResponse userResponse
 
-	if err := GetFullname(&userResponse, &userIdentity); err != nil {
+	if err := GetFullname(&userResponse, &userData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	authResponse.Code = http.StatusOK
-	authResponse.Data.Token.AccessToken = userIdentity.Token
-	authResponse.Data.Token.RequestToken = userIdentity.Token
-	authResponse.Data.FullName = userResponse.Username
-	authResponse.Data.UserID = userIdentity.UserID
-	authResponse.Data.RoleID = userIdentity.RoleID
-	authResponse.Data.TeamID = userIdentity.TeamID
-
-	if userIdentity.RoleID == 2 {
-
-		if _, err := auc.TeamService.GetTeamByNum(userIdentity.TeamID); err != nil {
-
-			teamlead := models.Employee{
-				ID:       userIdentity.UserID,
-				Name:     userResponse.Username,
-				Position: userIdentity.RoleID,
-			}
-
-			team := models.Team{
-				ID:       userIdentity.TeamID,
-				Number:   userIdentity.TeamID,
-				TeamLead: teamlead,
-			}
-
-			auc.TeamService.CreateTeam(&team)
-
-		}
-
-	}
+	authResponse.Token.AccessToken = userData.Token
+	authResponse.Token.RequestToken = userData.Token
+	authResponse.Username = userResponse.Username
+	authResponse.UserID = userData.UserID
+	authResponse.RoleID = userData.RoleID
+	authResponse.TeamID = userData.TeamID
 
 	ctx.JSON(http.StatusOK, authResponse)
 }
 
-func (auc AuthController) CreateUser(ctx *gin.Context) {
-
-	var user models.User
-
-	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-	}
-
-	err := auc.AuthService.CreateUser(&user)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, user)
-
-}
-
-func (auc AuthController) GetAll(ctx *gin.Context) {
-
-	users, err := auc.AuthService.GetAll()
-
-	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, users)
-
-}
-
-func (auc AuthController) RegisterUserRoutes(rg *gin.RouterGroup) {
+func (ctrl AuthController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	authRequestGroup := rg.Group("/auth")
 
-	authRequestGroup.POST("", auc.Login)
-
-	usersGroup := authRequestGroup.Group("/users")
-	usersGroup.POST("/create", auc.CreateUser)
-	usersGroup.POST("/getall", auc.GetAll)
+	authRequestGroup.POST("", ctrl.Login)
 
 }
 
-func DenyAuthentication(authReponse *models.AuthResponse, err error, ctx *gin.Context) {
-
-	authReponse.Code = http.StatusBadRequest
-	authReponse.Data.Meta.Error = err.Error()
-	authReponse.Data.Meta.Message = "Error"
+func DenyAuthentication(authReponse *models.AuthRequestData, err error, ctx *gin.Context) {
+	authReponse.Meta.Error = err.Error()
+	authReponse.Meta.Message = "Error"
 	ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
-
 }
-func GetFullname(userResponse *userResponse, userIdentity *models.UserIdentity) error {
+
+func GetFullname(userResponse *userResponse, userData *models.UserData) error {
 
 	endpoint := "/v1/Identity/users/"
-	urlPath := models.Basepath + endpoint + strconv.Itoa(userIdentity.UserID)
+	urlPath := models.Basepath + endpoint + strconv.Itoa(userData.UserID)
 
-	bearer := "BEARER " + userIdentity.Token
+	bearer := "BEARER " + userData.Token
 
 	request, err := http.NewRequest(http.MethodGet, urlPath, nil)
 

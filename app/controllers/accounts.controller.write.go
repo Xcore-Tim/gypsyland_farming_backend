@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"gypsyland_farming/app/models"
+	"strconv"
+	"time"
 
 	"net/http"
 
@@ -12,7 +14,7 @@ import (
 
 func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
-	var requestBody models.PostRequestBody
+	var requestBody models.CreateAccountRequestBody
 
 	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -21,27 +23,48 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
 	var accountRequestTask models.AccountRequestTask
 
-	accountRequestTask.AccountRequest = requestBody.AccountRequest
+	if locationID, err := primitive.ObjectIDFromHex(requestBody.AccountRequest.LocationID); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": locationID})
+		return
+	} else {
+		if location, err := ctrl.LocationService.GetLocation(locationID); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": location})
+			return
+		} else {
+			accountRequestTask.AccountRequest.Location = *location
+		}
+	}
 
-	accountRequestTask.Buyer.ID = requestBody.UserIdentity.UserID
-	accountRequestTask.Buyer.Name = requestBody.UserIdentity.FullName
-	accountRequestTask.Buyer.Position = requestBody.UserIdentity.RoleID
-	accountRequestTask.BuyerID = requestBody.UserIdentity.UserID
+	if accountTypeID, err := primitive.ObjectIDFromHex(requestBody.AccountRequest.TypeID); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": accountTypeID})
+		return
+	} else {
+		if accountType, err := ctrl.AccountTypesService.GetType(accountTypeID); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": accountType})
+			return
+		} else {
+			accountRequestTask.AccountRequest.Type = *accountType
+		}
+	}
 
-	team, err := ctrl.TeamService.GetTeamByNum(requestBody.UserIdentity.TeamID)
+	accountRequestTask.AccountRequest.Quantity, _ = strconv.Atoi(requestBody.AccountRequest.Quantity)
+
+	requestBody.Convert()
+
+	team, err := ctrl.TeamService.GetTeamByNum(requestBody.UserData.TeamID)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	accountRequestTask.Team.ID = team.ID
-	accountRequestTask.Team.Number = team.Number
-	accountRequestTask.Team.TeamLead.ID = team.TeamLead.ID
-	accountRequestTask.Team.TeamLead.Name = team.TeamLead.Name
-	accountRequestTask.Team.TeamLead.Position = team.TeamLead.Position
-	accountRequestTask.TeamID = requestBody.UserIdentity.TeamID
-	accountRequestTask.Description = requestBody.Description
+	accountRequestTask.Team = *team
+	accountRequestTask.DateCreated = time.Now().Unix()
+	accountRequestTask.Description = requestBody.AccountRequest.Description
+
+	accountRequestTask.Buyer.ID = requestBody.UserData.UserID
+	accountRequestTask.Buyer.Name = requestBody.UserData.Username
+	accountRequestTask.Buyer.Position = requestBody.UserData.RoleID
 
 	if err := ctrl.WriteAccountRequestService.CreateAccountRequest(&accountRequestTask); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
@@ -51,40 +74,17 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
-func (ctrl AccountRequestController) UpdateAccountRequest(ctx *gin.Context) {
-
-	var accountRequestTask models.AccountRequestTask
-
-	if err := ctx.ShouldBindJSON(&accountRequestTask); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	err := ctrl.WriteAccountRequestService.UpdateAccountRequest(&accountRequestTask)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": accountRequestTask})
-}
-
 func (ctrl AccountRequestController) UpdateRequest(ctx *gin.Context) {
 
-	var accountRequestUpdate models.AccountRequestUpdate
-
-	request_id, _ := primitive.ObjectIDFromHex(ctx.Param("request_id"))
+	var accountRequestUpdate models.UpdateAccountRequest
 
 	if err := ctx.ShouldBindJSON(&accountRequestUpdate); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	accountRequestUpdate.ID = request_id
+	accountRequestUpdate.Convert()
 
-	err := ctrl.WriteAccountRequestService.UpdateRequest(&accountRequestUpdate)
-
-	if err != nil {
+	if err := ctrl.WriteAccountRequestService.UpdateRequestNew(&accountRequestUpdate); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -94,22 +94,16 @@ func (ctrl AccountRequestController) UpdateRequest(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) TakeAccountRequest(ctx *gin.Context) {
 
-	var userIdentity models.UserIdentity
+	var requestData models.TakeAccountRequest
 
-	request_id, _ := primitive.ObjectIDFromHex(ctx.Param("request_id"))
-
-	if err := ctx.ShouldBindJSON(&userIdentity); err != nil {
+	if err := ctx.ShouldBindJSON(&requestData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	farmer := models.Employee{
-		ID:       userIdentity.UserID,
-		Name:     userIdentity.FullName,
-		Position: userIdentity.RoleID,
-	}
+	requestData.Convert()
 
-	if err := ctrl.WriteAccountRequestService.TakeAccountRequest(&farmer, &request_id); err != nil {
+	if err := ctrl.WriteAccountRequestService.TakeAccountRequest(&requestData); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}
@@ -119,20 +113,21 @@ func (ctrl AccountRequestController) TakeAccountRequest(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) CancelAccountRequest(ctx *gin.Context) {
 
-	var canceledRequest models.AccountRequestCanceled
+	var cancelRequest models.CancelAccountRequest
 
-	request_id, _ := primitive.ObjectIDFromHex(ctx.Param("request_id"))
-
-	description := ""
-
-	if err := ctx.ShouldBindJSON(&canceledRequest); err == nil {
-		description = canceledRequest.Description
-	}
-
-	err := ctrl.WriteAccountRequestService.CancelAccountRequest(&request_id, description)
+	err := ctx.ShouldBindJSON(&cancelRequest)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	cancelRequest.Convert()
+
+	err = ctrl.WriteAccountRequestService.CancelAccountRequest(&cancelRequest)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -141,20 +136,23 @@ func (ctrl AccountRequestController) CancelAccountRequest(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 
-	var accountRequestCompleted models.AccountRequestCompleted
-
-	request_id, _ := primitive.ObjectIDFromHex(ctx.Param("request_id"))
+	var accountRequestCompleted models.CompleteAccountRequest
 
 	if err := ctx.ShouldBindJSON(&accountRequestCompleted); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	accountRequestCompleted.ID = request_id
+	accountRequestCompleted.Convert()
 
-	err := ctrl.WriteAccountRequestService.CompleteAccountRequest(&accountRequestCompleted)
+	if accountRequest, err := ctrl.ReadAccountRequestService.GetRequest(&accountRequestCompleted.RequestID); err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	} else {
+		accountRequestCompleted.TotalSum = float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.Price
+	}
 
-	if err != nil {
+	if err := ctrl.WriteAccountRequestService.CompleteAccountRequest(&accountRequestCompleted); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}

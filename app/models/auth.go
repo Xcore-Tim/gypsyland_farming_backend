@@ -4,19 +4,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type AuthResponse struct {
-	Code int          `json:"code"`
-	Data ResponseData `json:"data"`
-}
-
 type AuthRequest struct {
-	Username string `form:"username"`
+	Email    string `form:"email"`
 	Password string `form:"password"`
 }
 
-type ResponseData struct {
+type AuthRequestData struct {
 	Token    Token            `json:"token"`
-	FullName string           `json:"fullname"`
+	Username string           `json:"username"`
 	UserID   int              `json:"userID"`
 	TeamID   int              `json:"teamID"`
 	RoleID   int              `json:"roleID"`
@@ -36,9 +31,17 @@ type User struct {
 }
 
 type UserIdentity struct {
+	UserID   string `json:"userID"`
+	RoleID   string `json:"roleID"`
+	TeamID   string `json:"teamID"`
+	Username string `json:"username"`
+	Token    string `json:"token"`
+}
+
+type UserData struct {
 	UserID   int    `json:"userID"`
 	RoleID   int    `json:"roleID"`
 	TeamID   int    `json:"teamID"`
-	FullName string `json:"fullname"`
+	Username string `json:"username"`
 	Token    string `json:"token"`
 }

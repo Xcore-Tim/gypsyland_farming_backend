@@ -8,7 +8,7 @@ import (
 
 type LocationService interface {
 	CreateLocation(*models.Location) error
-	GetLocation(*primitive.ObjectID) (*models.Location, error)
+	GetLocation(primitive.ObjectID) (*models.Location, error)
 	GetAll() ([]*models.Location, error)
 	UpdateLocation(*models.Location) error
 	DeleteLocation(*string) error

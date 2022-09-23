@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"gypsyland_farming/app/models"
+	filters "gypsyland_farming/app/requests"
 	"strconv"
 	"strings"
 
@@ -21,68 +22,6 @@ func (ctrl AccountRequestController) GetAll(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, accountRequests)
-}
-
-func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Context) {
-
-	var requestBody models.GetRequestBody
-
-	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	}
-
-	convertPeriod(&requestBody.Period)
-
-	requestBody.Status = status
-
-	switch requestBody.UserIdentity.RoleID {
-
-	case 6:
-		teamAccess, err := ctrl.TeamAccessService.GetAccesses(requestBody.UserIdentity.UserID)
-
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "found no access for farmer"})
-			return
-		}
-
-		var accountRequestTasks []models.AccountRequestTask
-
-		err = ctrl.ReadAccountRequestService.GetFarmerRequests(&requestBody, &accountRequestTasks, teamAccess)
-
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "found no documents"})
-			return
-		}
-
-		ctx.JSON(http.StatusOK, accountRequestTasks)
-
-	case 2:
-
-		var accountRequestTasks []models.AccountRequestTask
-
-		err := ctrl.ReadAccountRequestService.GetTeamleadRequests(&requestBody, &accountRequestTasks)
-
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-
-		ctx.JSON(http.StatusOK, accountRequestTasks)
-
-	case 1, 5:
-
-		var accountRequestTasks []models.AccountRequestTask
-
-		err := ctrl.ReadAccountRequestService.GetTLFARequests(&requestBody, &accountRequestTasks)
-
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "found no documents"})
-			return
-		}
-
-		ctx.JSON(http.StatusOK, accountRequestTasks)
-
-	}
 }
 
 func (ctrl AccountRequestController) GetPendingRequests(ctx *gin.Context) {
@@ -107,6 +46,153 @@ func (ctrl AccountRequestController) GetCanceledRequests(ctx *gin.Context) {
 
 	status := models.Canceled
 	ctrl.GetAccountRequests(status, ctx)
+}
+
+func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Context) {
+
+	var requestBody models.GetRequestBody
+
+	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	convertPeriod(&requestBody.Period)
+
+	requestBody.Status = status
+
+	requestBody.UserData.RoleID, _ = strconv.Atoi(requestBody.UserIdentity.RoleID)
+	requestBody.UserData.UserID, _ = strconv.Atoi(requestBody.UserIdentity.UserID)
+	requestBody.UserData.TeamID, _ = strconv.Atoi(requestBody.UserIdentity.TeamID)
+
+	requestBody.UserData.Token = requestBody.UserIdentity.Token
+
+	switch requestBody.UserData.RoleID {
+
+	case 6:
+		teamAccess, err := ctrl.TeamAccessService.GetAccesses(requestBody.UserData.UserID)
+
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "found no access for farmer"})
+			return
+		}
+
+		var accountRequestTasks []models.AccountRequestTask
+
+		if err = ctrl.ReadAccountRequestService.GetFarmerRequests(&requestBody, &accountRequestTasks, teamAccess); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "found no documents"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, accountRequestTasks)
+
+	case 2:
+
+		var accountRequestTasks []models.AccountRequestTask
+
+		if err := ctrl.ReadAccountRequestService.GetTeamleadRequests(&requestBody, &accountRequestTasks); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, accountRequestTasks)
+
+	default:
+
+		switch requestBody.UserData.RoleID {
+
+		case 1, 5:
+
+			var accountRequestTasks []models.AccountRequestTask
+
+			if err := ctrl.ReadAccountRequestService.GetRequests(&requestBody, &accountRequestTasks, filters.TLFAdminRequest); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, accountRequestTasks)
+
+		case 3, 4, 7:
+
+			ctrl.GetBuyerRequests(ctx, &requestBody)
+
+		default:
+
+			var accountRequestTasks []models.AccountRequestTask
+
+			if err := ctrl.ReadAccountRequestService.GetRequests(&requestBody, &accountRequestTasks, filters.BuyerRequestFilter); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
+
+			switch requestBody.Status {
+			case 0:
+				var buyerPendingResponse []models.BuyersPendingResponse
+
+				for _, v := range accountRequestTasks {
+					var response models.BuyersPendingResponse
+					response.ID = v.ID
+					response.AccountRequest = v.AccountRequest
+					response.Buyer = v.Buyer
+					response.Team = v.Team
+					response.DateCreated = v.DateCreated
+					response.DateUpdated = v.DateUpdated
+					response.DenialReason = v.DenialReason
+					response.Description = v.Description
+					buyerPendingResponse = append(buyerPendingResponse, response)
+				}
+
+				ctx.JSON(http.StatusOK, buyerPendingResponse)
+			case 1:
+				var buyersImworkResponse []models.BuyersInworkResponse
+
+				for _, v := range accountRequestTasks {
+					var response models.BuyersInworkResponse
+					response.ID = v.ID
+					response.AccountRequest = v.AccountRequest
+					response.Farmer = v.Farmer
+					response.Team = v.Team
+					response.DateCreated = v.DateCreated
+					response.DateUpdated = v.DateUpdated
+					response.DenialReason = v.DenialReason
+					response.Description = v.Description
+					buyersImworkResponse = append(buyersImworkResponse, response)
+
+					ctx.JSON(http.StatusAccepted, buyersImworkResponse)
+				}
+			}
+
+		}
+
+	}
+}
+
+func (ctrl AccountRequestController) GetBuyerRequests(ctx *gin.Context, requestBody *models.GetRequestBody) {
+
+	switch requestBody.Status {
+	case 0:
+		var buyerPendingResponse []models.BuyersPendingResponse
+		if err := ctrl.ReadAccountRequestService.GetBuyerPeindingRequests(requestBody, &buyerPendingResponse); err != nil {
+			return
+		}
+		ctx.JSON(http.StatusOK, buyerPendingResponse)
+	case 1:
+		var buyersInworkReponse []models.BuyersInworkResponse
+		if err := ctrl.ReadAccountRequestService.GetBuyerInworkRequests(requestBody, &buyersInworkReponse); err != nil {
+			return
+		}
+		ctx.JSON(http.StatusOK, buyersInworkReponse)
+	case 2:
+		var buyersCompletedResponse []models.BuyersCompletedResponse
+		if err := ctrl.ReadAccountRequestService.GetBuyerCompletedRequests(requestBody, &buyersCompletedResponse); err != nil {
+			return
+		}
+		ctx.JSON(http.StatusOK, buyersCompletedResponse)
+	case 3:
+		var buyersCancelledResponse []models.BuyersCancelledResponse
+		if err := ctrl.ReadAccountRequestService.GetBuyerCancelledRequests(requestBody, &buyersCancelledResponse); err != nil {
+			return
+		}
+		ctx.JSON(http.StatusOK, buyersCancelledResponse)
+	}
 }
 
 func (ctrl AccountRequestController) AggregateFarmersData(ctx *gin.Context) {

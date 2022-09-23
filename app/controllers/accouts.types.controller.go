@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"gypsyland_farming/app/models"
 	"gypsyland_farming/app/services"
@@ -21,7 +22,7 @@ func NewAccountTypesController(
 	}
 }
 
-func (atc AccountTypesController) CreateAccountType(ctx *gin.Context) {
+func (ctrl AccountTypesController) CreateAccountType(ctx *gin.Context) {
 
 	var accountType models.AccountType
 
@@ -30,7 +31,7 @@ func (atc AccountTypesController) CreateAccountType(ctx *gin.Context) {
 		return
 	}
 
-	err := atc.AccountTypesService.CreateAccountType(&accountType)
+	err := ctrl.AccountTypesService.CreateAccountType(&accountType)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error})
@@ -40,9 +41,9 @@ func (atc AccountTypesController) CreateAccountType(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": accountType})
 }
 
-func (atc AccountTypesController) GetAllTypes(ctx *gin.Context) {
+func (ctrl AccountTypesController) GetAll(ctx *gin.Context) {
 
-	accountTypes, err := atc.AccountTypesService.GetAllAccountTypes()
+	accountTypes, err := ctrl.AccountTypesService.GetAll()
 
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
@@ -52,10 +53,24 @@ func (atc AccountTypesController) GetAllTypes(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, accountTypes)
 }
 
-func (atc AccountTypesController) RegisterUserRoutes(rg *gin.RouterGroup) {
+func (ctrl AccountTypesController) GetType(ctx *gin.Context) {
+
+	accountTypeID, _ := primitive.ObjectIDFromHex(ctx.Param("accountTypeID"))
+
+	if accountType, err := ctrl.AccountTypesService.GetType(accountTypeID); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	} else {
+		ctx.JSON(http.StatusOK, accountType)
+	}
+
+}
+
+func (ctrl AccountTypesController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	accountTypeGroup := rg.Group("/accountTypes")
 
-	accountTypeGroup.POST("/create", atc.CreateAccountType)
-	accountTypeGroup.POST("/getall", atc.GetAllTypes)
+	accountTypeGroup.POST("/create", ctrl.CreateAccountType)
+	accountTypeGroup.POST("/getall", ctrl.GetAll)
+	accountTypeGroup.POST("/get/:accountTypeID", ctrl.GetType)
 }

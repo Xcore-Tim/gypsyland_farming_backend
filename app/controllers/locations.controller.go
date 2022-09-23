@@ -41,7 +41,7 @@ func (lc *LocationController) CreateLocation(ctx *gin.Context) {
 func (lc *LocationController) GetLocation(ctx *gin.Context) {
 
 	locationId, _ := primitive.ObjectIDFromHex(ctx.Param("id"))
-	location, err := lc.LocationService.GetLocation(&locationId)
+	location, err := lc.LocationService.GetLocation(locationId)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})

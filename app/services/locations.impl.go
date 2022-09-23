@@ -29,14 +29,16 @@ func (l *LocationServiceImpl) CreateLocation(location *models.Location) error {
 
 }
 
-func (l *LocationServiceImpl) GetLocation(name *primitive.ObjectID) (*models.Location, error) {
+func (l *LocationServiceImpl) GetLocation(id primitive.ObjectID) (*models.Location, error) {
 
-	var location *models.Location
-	query := bson.D{bson.E{Key: "_id", Value: name}}
+	var location models.Location
+	query := bson.D{bson.E{Key: "_id", Value: id}}
 
-	err := l.locationCollection.FindOne(l.ctx, query).Decode(&location)
+	if err := l.locationCollection.FindOne(l.ctx, query).Decode(&location); err != nil {
+		return &location, errors.New("no locations found")
+	}
 
-	return location, err
+	return &location, nil
 
 }
 

@@ -1,10 +1,6 @@
 package models
 
-import (
-	// "time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 const (
 	Pending  = 0
@@ -37,75 +33,21 @@ type AccountRequest struct {
 
 type AccountRequestTask struct {
 	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	AccountRequest AccountRequest     `json:"account_request" bson:"account_request"`
+	AccountRequest AccountRequest     `json:"accountRequest" bson:"accountRequest"`
 	Status         int                `json:"status" bson:"status"`
 	Buyer          Employee           `json:"buyer" bson:"buyer"`
-	BuyerID        int                `json:"buyerID" bson:"buyerID"`
 	Farmer         Employee           `json:"farmer" bson:"farmer"`
-	FarmerID       int                `json:"farmerID" bson:"farmerID"`
 	Team           Team               `json:"team" bson:"team"`
-	TeamID         int                `json:"teamID" bson:"teamID"`
 	Valid          int                `json:"valid" bson:"valid"`
 	Price          float64            `json:"price" bson:"price"`
+	TotalSum       float64            `json:"totalSum" bson:"totalSum"`
 	Currency       Currency           `json:"currency" bson:"currency"`
-	DenialReason   string             `json:"denial_reason" bson:"denial_reason"`
-	DateCreated    int64              `json:"date_created" bson:"date_created"`
-	DateUpdated    int64              `json:"date_updated" bson:"date_updated"`
+	CancelledBy    Employee           `json:"cancelledBy" bson:"cancelledBy"`
+	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
+	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`
+	DateFinished   int64              `json:"dateFinished" bson:"dateFinished"`
+	DateCancelled  int64              `json:"dateCancelled" bson:"dateCancelled"`
 	Description    string             `json:"description" bson:"description"`
-	TotalSum       float64            `json:"total_sum" bson:"total_sum"`
-}
-
-type AccountRequestCompleted struct {
-	ID          primitive.ObjectID `json:"_id" bson:"_id"`
-	Valid       int                `json:"valid" bson:"valid"`
-	Price       float64            `json:"price" bson:"price"`
-	Description string             `json:"description" bson:"description"`
-	TotalSum    float64            `json:"total_sum" bson:"total_sum"`
-}
-
-type AccountRequestCanceled struct {
-	Description string `json:"description"`
-}
-
-type AccountRequestUpdate struct {
-	ID           primitive.ObjectID
-	Quantity     int     `json:"quantity" bson:"quantity"`
-	Price        float64 `json:"price" bson:"price"`
-	Description  string  `json:"description" bson:"description"`
-	DenialReason string  `json:"denial_reason" bson:"denial_reason"`
-}
-
-type GroupedFarmersResponse struct {
-	Farmer   Employee `json:"_id" bson:"_id"`
-	Teams    string   `json:"teams" bson:"teams"`
-	Quantity int      `json:"quantity" bson:"quantity"`
-	Price    float64  `json:"price" bson:"price"`
-	Valid    int      `json:"valid" bson:"valid"`
-}
-
-type GroupedBuyersResponse struct {
-	Buyer    Employee `json:"_id" bson:"_id"`
-	Team     Team     `josn:"team" bson:"team"`
-	Quantity int      `json:"quantity" bson:"quantity"`
-	Price    float64  `json:"price" bson:"price"`
-	Valid    int      `json:"valid" bson:"valid"`
-}
-
-type GroupedTeamsResponse struct {
-	ID       Team    `json:"_id" bson:"_id"`
-	Quantity int     `json:"quantity"`
-	Price    float64 `json:"price"`
-	Valid    int     `json:"valid"`
-}
-
-type GetRequestBody struct {
-	Period       Period       `json:"period"`
-	UserIdentity UserIdentity `json:"user_identity"`
-	Status       int
-}
-
-type PostRequestBody struct {
-	UserIdentity   UserIdentity   `json:"user_identity"`
-	AccountRequest AccountRequest `json:"account_request"`
-	Description    string         `json:"description"`
+	DenialReason   string             `json:"denialReason" bson:"denialReason"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }

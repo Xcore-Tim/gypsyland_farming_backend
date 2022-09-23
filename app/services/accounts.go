@@ -9,24 +9,32 @@ import (
 
 type ReadAccountRequestService interface {
 	GetAll() ([]*models.AccountRequestTask, error)
+
+	GetRequest(*primitive.ObjectID) (*models.AccountRequestTask, error)
+
 	GetTLFARequests(*models.GetRequestBody, *[]models.AccountRequestTask) error
 	GetTeamleadRequests(*models.GetRequestBody, *[]models.AccountRequestTask) error
+	GetRequests(*models.GetRequestBody, *[]models.AccountRequestTask, models.GetFunctions) error
 	GetFarmerRequests(*models.GetRequestBody, *[]models.AccountRequestTask, *models.TeamAccess) error
+
+	GetBuyerPeindingRequests(*models.GetRequestBody, *[]models.BuyersPendingResponse) error
+	GetBuyerInworkRequests(*models.GetRequestBody, *[]models.BuyersInworkResponse) error
+	GetBuyerCompletedRequests(*models.GetRequestBody, *[]models.BuyersCompletedResponse) error
+	GetBuyerCancelledRequests(*models.GetRequestBody, *[]models.BuyersCancelledResponse) error
 
 	AggregateFarmersData(*[]models.GroupedFarmersResponse) error
 	AggregateTeamsData(*[]models.GroupedTeamsResponse) error
 	AggregateBuyersData(teamlead_id int) []bson.M
-	AggregateFarmersDataBSON() []bson.M
 }
 
 type WriteAccountRequestService interface {
 	CreateAccountRequest(*models.AccountRequestTask) error
-	UpdateAccountRequest(*models.AccountRequestTask) error
-	UpdateRequest(*models.AccountRequestUpdate) error
+	UpdateRequest(*models.UpdateAccountRequest) error
+	UpdateRequestNew(*models.UpdateAccountRequest) error
 
-	TakeAccountRequest(*models.Employee, *primitive.ObjectID) error
-	CancelAccountRequest(*primitive.ObjectID, string) error
-	CompleteAccountRequest(*models.AccountRequestCompleted) error
+	TakeAccountRequest(*models.TakeAccountRequest) error
+	CancelAccountRequest(*models.CancelAccountRequest) error
+	CompleteAccountRequest(*models.CompleteAccountRequest) error
 	ReturnAccountRequest(*primitive.ObjectID) (*models.AccountRequestTask, error)
 
 	DeleteAccountRequest(*primitive.ObjectID) error
@@ -34,5 +42,6 @@ type WriteAccountRequestService interface {
 
 type AccountTypesService interface {
 	CreateAccountType(*models.AccountType) error
-	GetAllAccountTypes() ([]*models.AccountType, error)
+	GetAll() ([]*models.AccountType, error)
+	GetType(primitive.ObjectID) (*models.AccountType, error)
 }

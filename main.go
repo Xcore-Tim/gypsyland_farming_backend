@@ -27,10 +27,6 @@ var (
 	positionController controllers.PositionController
 	positionCollection *mongo.Collection
 
-	employeeService    services.EmployeeService
-	employeeController controllers.EmployeeController
-	employeeCollection *mongo.Collection
-
 	teamService    services.TeamService
 	teamController controllers.TeamController
 	teamCollection *mongo.Collection
@@ -45,7 +41,7 @@ var (
 	accountRequestCollection     *mongo.Collection
 	accountRequestTaskCollection *mongo.Collection
 
-	accountTypeService    services.AccountTypesService
+	accountTypesService   services.AccountTypesService
 	accountTypeController controllers.AccountTypesController
 	accountTypeCollection *mongo.Collection
 
@@ -82,10 +78,6 @@ func init() {
 	positionService = services.NewPositionService(positionCollection, ctx)
 	positionController = controllers.NewPositionController(positionService)
 
-	employeeCollection = mongoClient.Database("gypsyland").Collection("employees")
-	employeeService = services.NewEmployeeService(employeeCollection, ctx)
-	employeeController = controllers.NewEmployeeController(employeeService)
-
 	teamCollection = mongoClient.Database("gypsyland").Collection("teams")
 	teamService = services.NewTeamsService(teamCollection, ctx)
 	teamController = controllers.NewTeamController(teamService)
@@ -97,16 +89,16 @@ func init() {
 	accountRequestCollection = mongoClient.Database("gypsyland").Collection("accountRequests")
 	accountRequestTaskCollection = mongoClient.Database("gypsyland").Collection("accountRequestTasks")
 
+	accountTypeCollection = mongoClient.Database("gypsyland").Collection("accountTypes")
+	accountTypesService = services.NewAccountTypesService(accountTypeCollection, ctx)
+	accountTypeController = controllers.NewAccountTypesController(accountTypesService)
+
 	readAccountRequestService = services.NewReadAccountRequestService(accountRequestCollection, accountRequestTaskCollection, ctx)
 	writeAccountRequestService = services.NewWriteAccountRequestService(accountRequestCollection, accountRequestTaskCollection, ctx)
-	accountRequestController = controllers.NewAccountRequestTaskController(readAccountRequestService, writeAccountRequestService, teamService)
-
-	accountTypeCollection = mongoClient.Database("gypsyland").Collection("accountTypes")
-	accountTypeService = services.NewAccountTypesService(accountTypeCollection, ctx)
-	accountTypeController = controllers.NewAccountTypesController(accountTypeService)
+	accountRequestController = controllers.NewAccountRequestTaskController(readAccountRequestService, writeAccountRequestService, teamService, teamAccessService, locationService, accountTypesService)
 
 	userCollection = mongoClient.Database("gypsyland").Collection("users")
-	authService = services.NewAuthService(userCollection, employeeCollection, ctx)
+	authService = services.NewAuthService(userCollection, ctx)
 	jwtService = services.NewJWTService()
 	authController = controllers.NewAuthController(authService, jwtService, teamService)
 
@@ -124,7 +116,6 @@ func main() {
 
 	locationController.RegisterUserRoutes(basepath)
 	positionController.RegisterUserRoutes(basepath)
-	employeeController.RegisterUserRoutes(basepath)
 	accountRequestController.RegisterUserRoutes(basepath)
 	accountTypeController.RegisterUserRoutes(basepath)
 	authController.RegisterUserRoutes(basepath)

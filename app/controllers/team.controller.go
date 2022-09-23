@@ -11,7 +11,6 @@ import (
 type TeamController struct {
 	TeamService       services.TeamService
 	TeamAccessService services.TeamAccessService
-	EmployeeService   services.EmployeeService
 }
 
 func NewTeamController(teamService services.TeamService) TeamController {

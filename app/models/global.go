@@ -38,8 +38,8 @@ type Currency struct {
 }
 
 type Period struct {
-	StartISO  string `json:"startdate"`
-	EndISO    string `json:"enddate"`
-	StartDate time.Time
-	EndDate   time.Time
+	StartISO  string    `json:"startDate"`
+	EndISO    string    `json:"endDate"`
+	StartDate time.Time `json:"unixStart"`
+	EndDate   time.Time `json:"unixEnd"`
 }

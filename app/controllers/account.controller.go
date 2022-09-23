@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"gypsyland_farming/app/services"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,31 +9,31 @@ import (
 type AccountRequestController struct {
 	ReadAccountRequestService  services.ReadAccountRequestService
 	WriteAccountRequestService services.WriteAccountRequestService
-	TeamService                services.TeamService
 	TeamAccessService          services.TeamAccessService
+	TeamService                services.TeamService
+	LocationService            services.LocationService
+	AccountTypesService        services.AccountTypesService
 }
 
 func NewAccountRequestTaskController(
 	readAccountRequestService services.ReadAccountRequestService,
 	writeAccountRequestService services.WriteAccountRequestService,
 	teamService services.TeamService,
+	teamAccessService services.TeamAccessService,
+	locationService services.LocationService,
+	accountTypesService services.AccountTypesService,
 ) AccountRequestController {
 	return AccountRequestController{
 		ReadAccountRequestService:  readAccountRequestService,
 		WriteAccountRequestService: writeAccountRequestService,
 		TeamService:                teamService,
+		TeamAccessService:          teamAccessService,
+		LocationService:            locationService,
+		AccountTypesService:        accountTypesService,
 	}
 }
 
-func (ctrl AccountRequestController) test(ctx *gin.Context) {
-	username := ctx.PostForm("username")
-	password := ctx.PostForm("password")
-	ctx.JSON(http.StatusOK, gin.H{"username": username, "password": password})
-}
-
 func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
-
-	rg.POST("/test", ctrl.test)
 
 	accountRequestGroup := rg.Group("/accountRequests")
 
@@ -57,17 +56,19 @@ func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	updateGroup := accountRequestGroup.Group("/update")
 
-	updateGroup.POST("/request/:request_id", ctrl.UpdateRequest)
-	updateGroup.POST("/full", ctrl.UpdateAccountRequest)
+	updateGroup.POST("/request", ctrl.UpdateRequest)
 
 	statusGroup := updateGroup.Group("/status")
 
-	statusGroup.POST("/inwork/:request_id", ctrl.TakeAccountRequest)
-	statusGroup.POST("/canceled/:request_id", ctrl.CancelAccountRequest)
+	statusGroup.POST("/inwork", ctrl.TakeAccountRequest)
+	statusGroup.POST("/canceled", ctrl.CancelAccountRequest)
 	statusGroup.POST("/completed/:request_id", ctrl.CompleteAccountRequest)
 	statusGroup.POST("/return/:request_id/:user_id", ctrl.ReturnAccountRequest)
 
 	deleteGroup := accountRequestGroup.Group("/delete")
 	deleteGroup.POST("/:request_id", ctrl.DeleteAccountRequest)
+}
 
+type UserDataConverter interface {
+	Convert()
 }

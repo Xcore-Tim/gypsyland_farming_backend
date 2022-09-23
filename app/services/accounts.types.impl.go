@@ -6,37 +6,38 @@ import (
 	"gypsyland_farming/app/models"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type AccountTypesServiceImpl struct {
-	accountTypeCollection *mongo.Collection
-	ctx                   context.Context
+	accountTypesCollection *mongo.Collection
+	ctx                    context.Context
 }
 
-func NewAccountTypesService(accountTypeCollection *mongo.Collection, ctx context.Context) AccountTypesService {
+func NewAccountTypesService(accountTypesCollection *mongo.Collection, ctx context.Context) AccountTypesService {
 
 	return &AccountTypesServiceImpl{
-		accountTypeCollection: accountTypeCollection,
+		accountTypesCollection: accountTypesCollection,
 	}
 }
 
-func (ats AccountTypesServiceImpl) CreateAccountType(accountType *models.AccountType) error {
-	_, err := ats.accountTypeCollection.InsertOne(ats.ctx, accountType)
+func (srvc AccountTypesServiceImpl) CreateAccountType(accountType *models.AccountType) error {
+	_, err := srvc.accountTypesCollection.InsertOne(srvc.ctx, accountType)
 	return err
 }
 
-func (ats AccountTypesServiceImpl) GetAllAccountTypes() ([]*models.AccountType, error) {
+func (srvc AccountTypesServiceImpl) GetAll() ([]*models.AccountType, error) {
 
 	var accountTypes []*models.AccountType
 
-	cursor, err := ats.accountTypeCollection.Find(ats.ctx, bson.D{bson.E{}})
+	cursor, err := srvc.accountTypesCollection.Find(srvc.ctx, bson.D{bson.E{}})
 
 	if err != nil {
 		return nil, err
 	}
 
-	for cursor.Next(ats.ctx) {
+	for cursor.Next(srvc.ctx) {
 		var accountType models.AccountType
 		err = cursor.Decode(&accountType)
 
@@ -51,7 +52,7 @@ func (ats AccountTypesServiceImpl) GetAllAccountTypes() ([]*models.AccountType, 
 		return nil, err
 	}
 
-	cursor.Close(ats.ctx)
+	cursor.Close(srvc.ctx)
 
 	if len(accountTypes) == 0 {
 		return nil, errors.New("no documents found")
@@ -59,4 +60,15 @@ func (ats AccountTypesServiceImpl) GetAllAccountTypes() ([]*models.AccountType, 
 
 	return accountTypes, err
 
+}
+
+func (srvc AccountTypesServiceImpl) GetType(accountTypeID primitive.ObjectID) (*models.AccountType, error) {
+
+	var accountType models.AccountType
+
+	query := bson.D{bson.E{Key: "_id", Value: accountTypeID}}
+
+	err := srvc.accountTypesCollection.FindOne(srvc.ctx, query).Decode(&accountType)
+
+	return &accountType, err
 }
