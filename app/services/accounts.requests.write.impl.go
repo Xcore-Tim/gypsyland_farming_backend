@@ -129,10 +129,11 @@ func (srvc AccountRequestServiceImpl) CompleteAccountRequest(accountRequestCompl
 	filter := bson.D{bson.E{Key: "_id", Value: accountRequestCompleted.RequestID}}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
 		bson.E{Key: "status", Value: models.Complete},
-		bson.E{Key: "valid", Value: accountRequestCompleted.Valid},
-		bson.E{Key: "price", Value: accountRequestCompleted.Price},
-		bson.E{Key: "description", Value: accountRequestCompleted.Description},
+		bson.E{Key: "valid", Value: accountRequestCompleted.OrderInfo.Valid},
+		bson.E{Key: "price", Value: accountRequestCompleted.OrderInfo.Price},
+		bson.E{Key: "description", Value: accountRequestCompleted.OrderInfo.Description},
 		bson.E{Key: "totalSum", Value: accountRequestCompleted.TotalSum},
+		bson.E{Key: "downloadLink", Value: accountRequestCompleted.OrderInfo.Link},
 		bson.E{Key: "dateFinished", Value: time.Now().Unix()},
 	}}}
 

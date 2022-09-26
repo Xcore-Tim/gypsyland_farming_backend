@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gypsyland_farming/app/controllers"
-	"gypsyland_farming/app/services"
+	services "gypsyland_farming/app/services"
 	"log"
 
 	"github.com/gin-contrib/cors"

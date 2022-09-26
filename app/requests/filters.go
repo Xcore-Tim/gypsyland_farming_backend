@@ -21,7 +21,7 @@ func BuyerRequestFilter(requestBody *models.GetRequestBody) bson.D {
 	return filter
 }
 
-func FarmerRequest(requestBody *models.GetRequestBody, teamAccess models.TeamAccess) bson.D {
+func FarmerRequestFilter(requestBody *models.GetRequestBody, teamAccess models.TeamAccess) bson.D {
 
 	var filter primitive.D
 
@@ -30,42 +30,46 @@ func FarmerRequest(requestBody *models.GetRequestBody, teamAccess models.TeamAcc
 		filter = bson.D{
 			bson.E{Key: "$and", Value: bson.A{
 				bson.D{
-					bson.E{Key: "date_created", Value: bson.D{{Key: "$gte", Value: requestBody.Period.StartDate.Unix()}}},
-					bson.E{Key: "date_created", Value: bson.D{{Key: "$lte", Value: requestBody.Period.EndDate.Unix()}}},
-					bson.E{Key: "team.id", Value: bson.D{{Key: "$in", Value: teamAccess.Teams}}},
+					bson.E{Key: "team.number", Value: bson.D{{Key: "$in", Value: teamAccess.Teams}}},
 					bson.E{Key: "status", Value: requestBody.Status},
+					bson.E{Key: "$and", Value: bson.A{
+						bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+						bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+					}},
 				},
-			},
-			},
+			}},
 		}
 	default:
 
 		filter = bson.D{
 			bson.E{Key: "$and", Value: bson.A{
 				bson.D{
-					bson.E{Key: "date_created", Value: bson.D{{Key: "$gte", Value: requestBody.Period.StartDate.Unix()}}},
-					bson.E{Key: "date_created", Value: bson.D{{Key: "$lte", Value: requestBody.Period.EndDate.Unix()}}},
-					bson.E{Key: "team.id", Value: bson.D{{Key: "$in", Value: teamAccess.Teams}}},
-					bson.E{Key: "status", Value: requestBody.Status},
 					bson.E{Key: "farmer.id", Value: requestBody.UserData.UserID},
+					bson.E{Key: "team.number", Value: bson.D{{Key: "$in", Value: teamAccess.Teams}}},
+					bson.E{Key: "status", Value: requestBody.Status},
+					bson.E{Key: "$and", Value: bson.A{
+						bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+						bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+					}},
 				},
-			},
-			},
+			}},
 		}
 	}
 
 	return filter
 }
 
-func TeamleadRequest(requestBody *models.GetRequestBody) bson.D {
+func TeamleadRequestFilter(requestBody *models.GetRequestBody) bson.D {
 
 	filter := bson.D{
 		bson.E{Key: "$and", Value: bson.A{
 			bson.D{
-				bson.E{Key: "date_created", Value: bson.D{{Key: "$gte", Value: requestBody.Period.StartDate.Unix()}}},
-				bson.E{Key: "date_created", Value: bson.D{{Key: "$lte", Value: requestBody.Period.EndDate.Unix()}}},
 				bson.E{Key: "status", Value: requestBody.Status},
 				bson.E{Key: "team.id", Value: requestBody.UserData.TeamID},
+				bson.E{Key: "$and", Value: bson.A{
+					bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+					bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+				}},
 			},
 		},
 		},
@@ -78,10 +82,15 @@ func TLFAdminRequest(requestBody *models.GetRequestBody) bson.D {
 
 	filter := bson.D{
 		bson.E{Key: "$and", Value: bson.A{
-			bson.D{
-				bson.E{Key: "date_created", Value: bson.D{{Key: "$gte", Value: requestBody.Period.StartDate.Unix()}}},
-				bson.E{Key: "date_created", Value: bson.D{{Key: "$lte", Value: requestBody.Period.EndDate.Unix()}}},
-				bson.E{Key: "status", Value: requestBody.Status},
+			bson.E{Key: "$and", Value: bson.A{
+				bson.D{
+					bson.E{Key: "status", Value: requestBody.Status},
+					bson.E{Key: "$and", Value: bson.A{
+						bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+						bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+					}},
+				},
+			},
 			},
 		},
 		},
@@ -111,18 +120,18 @@ func AggregateFarmersData() (bson.D, bson.D) {
 	return matchStage, groupStage
 }
 
-func AggregateBuyersData(teamlead_id int) (bson.D, bson.D) {
+func AggregateBuyersData(teamleadID int) (bson.D, bson.D) {
 
 	matchStage := bson.D{bson.E{Key: "$match", Value: bson.D{
 		bson.E{Key: "status", Value: models.Complete},
-		bson.E{Key: "team.teamlead.id", Value: teamlead_id},
+		bson.E{Key: "team.teamlead.id", Value: teamleadID},
 	}}}
 
 	groupStage := bson.D{
 		{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: "$buyer"},
-			{Key: "price", Value: bson.D{
-				{Key: "$sum", Value: "$price"},
+			{Key: "totalSum", Value: bson.D{
+				{Key: "$sum", Value: "$totalSum"},
 			}},
 			{Key: "valid", Value: bson.D{
 				{Key: "$sum", Value: "$valid"},
@@ -145,8 +154,8 @@ func AggregateTeamsData() (bson.D, bson.D) {
 	groupStage := bson.D{
 		{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: "$team"},
-			{Key: "price", Value: bson.D{
-				{Key: "$sum", Value: "$price"},
+			{Key: "totalSum", Value: bson.D{
+				{Key: "$sum", Value: "$totalSum"},
 			}},
 			{Key: "valid", Value: bson.D{
 				{Key: "$sum", Value: "$valid"},

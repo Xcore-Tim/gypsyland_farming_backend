@@ -62,7 +62,7 @@ func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	statusGroup.POST("/inwork", ctrl.TakeAccountRequest)
 	statusGroup.POST("/canceled", ctrl.CancelAccountRequest)
-	statusGroup.POST("/completed/:request_id", ctrl.CompleteAccountRequest)
+	statusGroup.POST("/completed", ctrl.CompleteAccountRequest)
 	statusGroup.POST("/return/:request_id/:user_id", ctrl.ReturnAccountRequest)
 
 	deleteGroup := accountRequestGroup.Group("/delete")

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"gypsyland_farming/app/models"
 	"os"
-	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -34,20 +33,9 @@ func getSecretKey() string {
 
 func (srv *JWTServicesImpl) GenerateToken(email string, isUser bool) (string, error) {
 
-	// srv.customClaims.Name = email
-	// srv.customClaims.IsUser = isUser
-
-	// srv.customClaims.StandardClaims.ExpiresAt = time.Now().Add(time.Hour * 2).Unix()
-	// srv.customClaims.StandardClaims.Issuer = srv.issuer
-	// srv.customClaims.StandardClaims.IssuedAt = time.Now().Unix()
-
 	customClaims := &models.AuthCustomClaims{
-		Name: email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 2).Unix(),
-			Issuer:    srv.issuer,
-			IssuedAt:  time.Now().Unix(),
-		},
+		Name:             email,
+		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, customClaims)

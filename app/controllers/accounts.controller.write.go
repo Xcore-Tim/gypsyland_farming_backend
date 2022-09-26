@@ -149,7 +149,7 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	} else {
-		accountRequestCompleted.TotalSum = float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.Price
+		accountRequestCompleted.TotalSum = float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
 	}
 
 	if err := ctrl.WriteAccountRequestService.CompleteAccountRequest(&accountRequestCompleted); err != nil {

@@ -13,12 +13,9 @@ type TakeAccountRequest struct {
 }
 
 type CompleteAccountRequest struct {
-	OrderID      string       `json:"orderID"`
-	UserIdentity UserIdentity `json:"userIdentity"`
-	Valid        int          `json:"valid" bson:"valid"`
-	Price        float64      `json:"price" bson:"price"`
-	Description  string       `json:"description" bson:"description"`
-	Link         string       `json:"link"`
+	OrderID      string         `json:"orderID"`
+	UserIdentity UserIdentity   `json:"userIdentity"`
+	OrderInfo    CloseOrderInfo `json:"closeOrderInfo"`
 	TotalSum     float64
 	UserData     UserData
 	RequestID    primitive.ObjectID
@@ -31,6 +28,13 @@ type CancelAccountRequest struct {
 	UserData     UserData
 	RequestID    primitive.ObjectID
 	CancelledBy  Employee
+}
+
+type CloseOrderInfo struct {
+	Valid       int     `json:"valid"`
+	Price       float64 `json:"price"`
+	Description string  `json:"description"`
+	Link        string  `json:"downloadLink"`
 }
 
 type UpdateAccountRequest struct {
