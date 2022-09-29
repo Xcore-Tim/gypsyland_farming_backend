@@ -86,7 +86,6 @@ func (ctrl TeamController) ImportTeams(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
-
 }
 
 func (ctrl TeamController) RegisterUserRoutes(rg *gin.RouterGroup) {

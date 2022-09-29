@@ -47,7 +47,6 @@ var (
 
 	authService    services.AuthService
 	jwtService     services.JWTService
-	userCollection *mongo.Collection
 	authController controllers.AuthController
 )
 
@@ -97,17 +96,15 @@ func init() {
 	writeAccountRequestService = services.NewWriteAccountRequestService(accountRequestCollection, accountRequestTaskCollection, ctx)
 	accountRequestController = controllers.NewAccountRequestTaskController(readAccountRequestService, writeAccountRequestService, teamService, teamAccessService, locationService, accountTypesService)
 
-	userCollection = mongoClient.Database("gypsyland").Collection("users")
-	authService = services.NewAuthService(userCollection, ctx)
+	authService = services.NewAuthService(ctx)
 	jwtService = services.NewJWTService()
-	authController = controllers.NewAuthController(authService, jwtService, teamService)
+	authController = controllers.NewAuthController(jwtService, authService, teamService)
 
 	server = gin.Default()
 	server.Use(cors.Default())
 
 }
 
-// v1/location/create
 func main() {
 
 	defer mongoClient.Disconnect(ctx)

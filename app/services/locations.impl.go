@@ -26,7 +26,6 @@ func (l *LocationServiceImpl) CreateLocation(location *models.Location) error {
 
 	_, err := l.locationCollection.InsertOne(l.ctx, location)
 	return err
-
 }
 
 func (l *LocationServiceImpl) GetLocation(id primitive.ObjectID) (*models.Location, error) {
@@ -39,7 +38,6 @@ func (l *LocationServiceImpl) GetLocation(id primitive.ObjectID) (*models.Locati
 	}
 
 	return &location, nil
-
 }
 
 func (l *LocationServiceImpl) GetLocationByName(name string) (*models.Location, error) {

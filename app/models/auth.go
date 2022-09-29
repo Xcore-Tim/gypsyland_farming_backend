@@ -4,21 +4,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type AuthRequest struct {
-	Email    string `form:"email"`
-	Password string `form:"password"`
-}
+const (
+	Basepath        string = "https://g-identity-test.azurewebsites.net"
+	EndpointAuth    string = "/v1/accounts/auth"
+	ContentTypeAuth string = "application/json-patch+json"
+)
 
-type AuthRequestData struct {
+type AuthResponseData struct {
 	Token    Token            `json:"token"`
 	Username string           `json:"username"`
 	UserID   int              `json:"userID"`
 	TeamID   int              `json:"teamID"`
 	RoleID   int              `json:"roleID"`
-	Meta     ResponseDataMeta `json:"meta"`
+	Meta     ResponseMetaData `json:"meta"`
 }
 
-type ResponseDataMeta struct {
+type ResponseMetaData struct {
 	Message string `json:"message"`
 	Error   string `json:"error"`
 }
@@ -28,6 +29,11 @@ type User struct {
 	UserName string             `json:"username" bson:"username"`
 	Password string             `json:"password,omitempty" bson:"password"`
 	Employee Employee           `json:"employee" bson:"employee"`
+}
+
+type UserCredentials struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type UserIdentity struct {
@@ -44,4 +50,8 @@ type UserData struct {
 	TeamID   int    `json:"teamID"`
 	Username string `json:"username"`
 	Token    string `json:"token"`
+}
+
+type Username struct {
+	Username string
 }

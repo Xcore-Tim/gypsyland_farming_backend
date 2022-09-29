@@ -100,7 +100,7 @@ func (ctrl TeamAccessController) GetAccesses(ctx *gin.Context) {
 		return
 	}
 
-	teamAccess, err := ctrl.TeamAccessService.GetAccesses(user_id)
+	teamAccess, err := ctrl.TeamAccessService.GetAccess(user_id)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})

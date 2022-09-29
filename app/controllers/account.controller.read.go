@@ -64,13 +64,13 @@ func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Con
 	switch requestBody.UserData.RoleID {
 
 	case 6:
-		ctrl.GetFarmerRequests(ctx, &requestBody)
+		ctrl.GetFarmerRequests(&requestBody, ctx)
 	case 3, 4, 7:
-		ctrl.GetBuyerRequests(ctx, &requestBody)
+		ctrl.GetBuyerRequests(&requestBody, ctx)
 	}
 }
 
-func (ctrl AccountRequestController) GetBuyerRequests(ctx *gin.Context, requestBody *models.GetRequestBody) {
+func (ctrl AccountRequestController) GetBuyerRequests(requestBody *models.GetRequestBody, ctx *gin.Context) {
 
 	switch requestBody.Status {
 	case 0:
@@ -100,9 +100,9 @@ func (ctrl AccountRequestController) GetBuyerRequests(ctx *gin.Context, requestB
 	}
 }
 
-func (ctrl AccountRequestController) GetFarmerRequests(ctx *gin.Context, requestBody *models.GetRequestBody) {
+func (ctrl AccountRequestController) GetFarmerRequests(requestBody *models.GetRequestBody, ctx *gin.Context) {
 
-	teamAccess, err := ctrl.TeamAccessService.GetAccesses(requestBody.UserData.UserID)
+	teamAccess, err := ctrl.TeamAccessService.GetAccess(requestBody.UserData.UserID)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
@@ -193,7 +193,7 @@ func (ctrl AccountRequestController) AggregateFarmersData(ctx *gin.Context) {
 	var finalResponse []models.GroupedFarmersResponse
 
 	for _, farmer := range groupedResponse {
-		teamAccess, err := ctrl.TeamAccessService.GetAccesses(farmer.Farmer.ID)
+		teamAccess, err := ctrl.TeamAccessService.GetAccess(farmer.Farmer.ID)
 
 		if err != nil {
 			continue

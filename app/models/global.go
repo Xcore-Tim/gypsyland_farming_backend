@@ -6,8 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const Basepath string = "https://g-identity-test.azurewebsites.net"
-
 type Employee struct {
 	ID       int    `json:"id" bson:"id"`
 	Name     string `json:"name" bson:"name"`

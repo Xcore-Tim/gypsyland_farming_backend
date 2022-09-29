@@ -16,7 +16,7 @@ type TeamService interface {
 type TeamAccessService interface {
 	GetAllAccesses() ([]*models.TeamAccess, error)
 	GetFarmersAccesses(*[]models.FarmerAccess, *models.UserData) error
-	GetAccesses(int) (*models.TeamAccess, error)
+	GetAccess(int) (*models.TeamAccess, error)
 	GetAccessByNum(*models.TeamAccess, int) error
 	AddAccess(int, int) error
 	RevokeAccess(int, int) error

@@ -105,7 +105,7 @@ func (srvc TeamAccessServiceImpl) GetFarmersAccesses(farmerAccesses *[]models.Fa
 
 		access.Teams = make([]int, 1)
 
-		if teams, err := srvc.GetAccesses(farmer.ID); err == nil {
+		if teams, err := srvc.GetAccess(farmer.ID); err == nil {
 			access.Teams = teams.Teams
 		}
 
@@ -113,10 +113,9 @@ func (srvc TeamAccessServiceImpl) GetFarmersAccesses(farmerAccesses *[]models.Fa
 	}
 
 	return nil
-
 }
 
-func (srvc TeamAccessServiceImpl) GetAccesses(farmer int) (*models.TeamAccess, error) {
+func (srvc TeamAccessServiceImpl) GetAccess(farmer int) (*models.TeamAccess, error) {
 
 	var teamAccess models.TeamAccess
 
