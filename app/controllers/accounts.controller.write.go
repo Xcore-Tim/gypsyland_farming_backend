@@ -76,15 +76,43 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) UpdateRequest(ctx *gin.Context) {
 
-	var accountRequestUpdate models.UpdateAccountRequest
+	var accountRequestUpdate models.UpdateRequestBody
 
 	if err := ctx.ShouldBindJSON(&accountRequestUpdate); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	accountRequestUpdate.Convert()
 
-	if err := ctrl.WriteAccountRequestService.UpdateRequestNew(&accountRequestUpdate); err != nil {
+	accountRequest, err := ctrl.ReadAccountRequestService.GetAccountRequestData(&accountRequestUpdate.RequestID)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	accountRequestUpdate.AccountRequest = *accountRequest
+
+	if accountRequestUpdate.UpdateBody.Location != "" {
+		if location, err := ctrl.LocationService.GetLocationByName(accountRequestUpdate.UpdateBody.Location); err == nil {
+			accountRequestUpdate.AccountRequest.Location = *location
+		}
+	}
+
+	if accountRequestUpdate.UpdateBody.AccountType != "" {
+		if accountType, err := ctrl.AccountTypesService.GetTypeByName(accountRequestUpdate.UpdateBody.AccountType); err == nil {
+			accountRequestUpdate.AccountRequest.Type = *accountType
+		}
+	}
+
+	if accountRequestUpdate.UpdateBody.Quantity != accountRequest.Quantity {
+		accountRequestUpdate.AccountRequest.Quantity = accountRequestUpdate.UpdateBody.Quantity
+	}
+
+	ctx.JSON(http.StatusOK, accountRequestUpdate)
+
+	if err := ctrl.WriteAccountRequestService.UpdateRequest(&accountRequestUpdate); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -149,7 +177,8 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	} else {
-		accountRequestCompleted.TotalSum = float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
+		total := float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
+		accountRequestCompleted.TotalSum = ctrl.roundFloat(total, 2)
 	}
 
 	if err := ctrl.WriteAccountRequestService.CompleteAccountRequest(&accountRequestCompleted); err != nil {

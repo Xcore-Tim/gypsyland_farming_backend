@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"gypsyland_farming/app/models"
+	filters "gypsyland_farming/app/requests"
 	"io"
 	"net/http"
-	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type TeamServiceImpl struct {
@@ -38,15 +39,15 @@ func (srvc TeamServiceImpl) CreateTeam(team *models.Team) error {
 	return err
 }
 
-func (srvc TeamServiceImpl) GetAllTeams() ([]*models.Team, error) {
-
-	var teams []*models.Team
+func (srvc TeamServiceImpl) GetAllTeams() (*[]models.Team, error) {
 
 	cursor, err := srvc.teamCollection.Find(srvc.ctx, bson.D{bson.E{}})
 
 	if err != nil {
 		return nil, err
 	}
+
+	var teamList []models.Team
 
 	for cursor.Next(srvc.ctx) {
 		var team models.Team
@@ -56,7 +57,7 @@ func (srvc TeamServiceImpl) GetAllTeams() ([]*models.Team, error) {
 			return nil, err
 		}
 
-		teams = append(teams, &team)
+		teamList = append(teamList, team)
 	}
 
 	if err := cursor.Err(); err != nil {
@@ -65,11 +66,47 @@ func (srvc TeamServiceImpl) GetAllTeams() ([]*models.Team, error) {
 
 	cursor.Close(srvc.ctx)
 
-	if len(teams) == 0 {
+	if len(teamList) == 0 {
 		return nil, errors.New("no documents found")
 	}
 
-	return teams, err
+	return &teamList, err
+}
+
+func (srvc TeamServiceImpl) GetDropdown(teamAccess *models.TeamAccess, editAccessRequest *models.EditTeamAccessRequest) (*[]models.TeamNumber, error) {
+
+	filter := filters.TeamDropdown(teamAccess)
+	projection := filters.TeamsProjection()
+	cursor, err := srvc.teamCollection.Find(srvc.ctx, filter, options.Find().SetProjection(projection))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var teamList []models.TeamNumber
+
+	for cursor.Next(srvc.ctx) {
+		var team models.TeamNumber
+		err := cursor.Decode(&team)
+
+		if err != nil {
+			return nil, err
+		}
+
+		teamList = append(teamList, team)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	cursor.Close(srvc.ctx)
+
+	if len(teamList) == 0 {
+		return nil, errors.New("no documents found")
+	}
+
+	return &teamList, err
 }
 
 func (srvc TeamServiceImpl) GetTLTeam(employee *models.Employee) (*models.Team, error) {
@@ -119,14 +156,11 @@ func (srvc TeamServiceImpl) ImportTeams(token string) error {
 	defer response.Body.Close()
 
 	body, _ := io.ReadAll(response.Body)
-	// res := string(body)
 
 	var result []user
 	if err := json.Unmarshal([]byte(body), &result); err != nil {
 		return err
 	}
-
-	// fmt.Println(result)
 
 	for _, teamlead := range result {
 		var team models.Team
@@ -145,33 +179,4 @@ func (srvc TeamServiceImpl) ImportTeams(token string) error {
 	}
 
 	return err
-}
-
-func (srvc TeamServiceImpl) ImportTeams1(Token string) string {
-
-	endpoint := "/v1/Identity/users/byRole/"
-	urlPath := models.Basepath + endpoint + strconv.Itoa(models.TeamLead)
-
-	bearer := "BEARER " + Token
-
-	request, err := http.NewRequest(http.MethodGet, urlPath, nil)
-
-	if err != nil {
-		return ""
-	}
-
-	request.Header.Add("Authorization", bearer)
-
-	client := &http.Client{}
-
-	response, err := client.Do(request)
-
-	if err != nil {
-		return ""
-	}
-
-	defer response.Body.Close()
-
-	body, _ := io.ReadAll(response.Body)
-	return string(body)
 }

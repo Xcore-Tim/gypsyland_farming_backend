@@ -2,10 +2,14 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"gypsyland_farming/app/models"
+	"io"
+	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -59,6 +63,59 @@ func (srvc TeamAccessServiceImpl) GetAllAccesses() ([]*models.TeamAccess, error)
 	return teamAccesses, err
 }
 
+func (srvc TeamAccessServiceImpl) GetFarmersAccesses(farmerAccesses *[]models.FarmerAccess, userData *models.UserData) error {
+
+	basepath := "https://g-identity-test.azurewebsites.net"
+	endpoint := "/v1/Identity/users/byRole/"
+	urlPath := basepath + endpoint + "6"
+
+	bearer := "BEARER " + userData.Token
+
+	request, err := http.NewRequest(http.MethodGet, urlPath, nil)
+
+	if err != nil {
+		return err
+	}
+
+	request.Header.Add("Authorization", bearer)
+
+	client := &http.Client{}
+
+	response, err := client.Do(request)
+
+	if err != nil {
+		return err
+	}
+
+	defer response.Body.Close()
+
+	body, _ := io.ReadAll(response.Body)
+
+	var result []user
+	if err := json.Unmarshal([]byte(body), &result); err != nil {
+		return err
+	}
+
+	for _, farmer := range result {
+		var access models.FarmerAccess
+
+		access.Farmer.ID = farmer.ID
+		access.Farmer.Name = farmer.Username
+		access.Farmer.Position = 6
+
+		access.Teams = make([]int, 1)
+
+		if teams, err := srvc.GetAccesses(farmer.ID); err == nil {
+			access.Teams = teams.Teams
+		}
+
+		*farmerAccesses = append(*farmerAccesses, access)
+	}
+
+	return nil
+
+}
+
 func (srvc TeamAccessServiceImpl) GetAccesses(farmer int) (*models.TeamAccess, error) {
 
 	var teamAccess models.TeamAccess
@@ -70,6 +127,21 @@ func (srvc TeamAccessServiceImpl) GetAccesses(farmer int) (*models.TeamAccess, e
 	}
 
 	return &teamAccess, err
+}
+
+func (srvc TeamAccessServiceImpl) GetAccessByNum(teamAccess *models.TeamAccess, farmerID int) error {
+
+	var access models.TeamAccess
+
+	if err := srvc.teamAccessCollection.FindOne(srvc.ctx, bson.D{bson.E{Key: "employee", Value: farmerID}}).Decode(&access); err != nil {
+		return err
+	}
+
+	for team := range access.Teams {
+		teamAccess.Teams = append(teamAccess.Teams, team)
+	}
+
+	return nil
 }
 
 func (srvc TeamAccessServiceImpl) AddAccess(employee int, team int) error {
@@ -125,7 +197,16 @@ func (srvc TeamAccessServiceImpl) CheckAccess(employee int) (*models.TeamAccess,
 		var newAccess models.TeamAccess
 		newAccess.Employee = employee
 
-		_, err := srvc.teamAccessCollection.InsertOne(srvc.ctx, &newAccess)
+		result, err := srvc.teamAccessCollection.InsertOne(srvc.ctx, &newAccess)
+
+		oid, ok := result.InsertedID.(primitive.ObjectID)
+
+		if !ok {
+			return &newAccess, err
+		}
+
+		newAccess.ID = oid
+
 		return &newAccess, err
 	}
 

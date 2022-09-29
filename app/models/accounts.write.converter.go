@@ -20,7 +20,7 @@ func (r *CreateAccountRequestBody) Convert() {
 	ConvertUserData(&r.UserData, r.UserIdentity)
 }
 
-func (r *UpdateAccountRequest) Convert() {
+func (r *UpdateRequestBody) Convert() {
 	ConvertUserData(&r.UserData, r.UserIdentity)
 	r.RequestID, _ = primitive.ObjectIDFromHex(r.OrderID)
 }

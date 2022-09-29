@@ -72,3 +72,14 @@ func (srvc AccountTypesServiceImpl) GetType(accountTypeID primitive.ObjectID) (*
 
 	return &accountType, err
 }
+
+func (srvc AccountTypesServiceImpl) GetTypeByName(name string) (*models.AccountType, error) {
+
+	var accountType models.AccountType
+
+	query := bson.D{bson.E{Key: "name", Value: name}}
+
+	err := srvc.accountTypesCollection.FindOne(srvc.ctx, query).Decode(&accountType)
+
+	return &accountType, err
+}

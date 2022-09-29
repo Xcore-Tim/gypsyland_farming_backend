@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gypsyland_farming/app/models"
 	filters "gypsyland_farming/app/requests"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -119,9 +120,9 @@ func (srvc AccountRequestServiceImpl) GetRequests(requestBody *models.GetRequest
 	return nil
 }
 
-func (srvc AccountRequestServiceImpl) AggregateFarmersData(groupedRepsonse *[]models.GroupedFarmersResponse) error {
+func (srvc AccountRequestServiceImpl) AggregateFarmersData(requestBody *models.GetRequestBody, groupedRepsonse *[]models.GroupedFarmersResponse) error {
 
-	matchStage, groupStage := filters.AggregateFarmersData()
+	matchStage, groupStage := filters.AggregateFarmersData(requestBody)
 
 	cursor, err := srvc.accountRequestTaskCollection.Aggregate(srvc.ctx, mongo.Pipeline{matchStage, groupStage})
 
@@ -135,6 +136,10 @@ func (srvc AccountRequestServiceImpl) AggregateFarmersData(groupedRepsonse *[]mo
 		if err := cursor.Decode(&response); err != nil {
 			return err
 		}
+		response.UserIdentity.UserID = strconv.Itoa(response.Farmer.ID)
+		response.UserIdentity.RoleID = strconv.Itoa(response.Farmer.Position)
+		response.UserIdentity.Username = response.Farmer.Name
+		response.UserIdentity.Token = requestBody.UserData.Token
 
 		*groupedRepsonse = append(*groupedRepsonse, response)
 	}
@@ -142,24 +147,35 @@ func (srvc AccountRequestServiceImpl) AggregateFarmersData(groupedRepsonse *[]mo
 	return nil
 }
 
-func (srvc AccountRequestServiceImpl) AggregateBuyersData(teamlead_id int) []bson.M {
+func (srvc AccountRequestServiceImpl) AggregateBuyersData(requestBody *models.GetRequestBody, groupedRepsonse *[]models.GroupedBuyersResponse, teamleadID int) error {
 
-	matchStage, groupStage := filters.AggregateBuyersData(teamlead_id)
+	matchStage, groupStage := filters.AggregateBuyersData(requestBody, teamleadID)
+	cursor, err := srvc.accountRequestTaskCollection.Aggregate(srvc.ctx, mongo.Pipeline{matchStage, groupStage})
 
-	cursor, _ := srvc.accountRequestTaskCollection.Aggregate(srvc.ctx, mongo.Pipeline{matchStage, groupStage})
-
-	var results []bson.M
-
-	if err := cursor.All(srvc.ctx, &results); err != nil {
-		panic(err.Error())
+	if err != nil {
+		return err
 	}
 
-	return results
+	for cursor.Next(srvc.ctx) {
+		var response models.GroupedBuyersResponse
+		if err := cursor.Decode(&response); err != nil {
+			return err
+		}
+		response.UserData.UserID = response.Buyer.ID
+		response.UserData.RoleID = response.Buyer.Position
+		response.UserData.TeamID = response.Team.ID
+		response.UserData.Username = response.Buyer.Name
+		response.UserData.Token = requestBody.UserData.Token
+
+		*groupedRepsonse = append(*groupedRepsonse, response)
+	}
+
+	return nil
 }
 
-func (srvc AccountRequestServiceImpl) AggregateTeamsData(groupedRepsonse *[]models.GroupedTeamsResponse) error {
+func (srvc AccountRequestServiceImpl) AggregateTeamsData(requestBody *models.GetRequestBody, groupedRepsonse *[]models.GroupedTeamsResponse) error {
 
-	matchStage, groupStage := filters.AggregateTeamsData()
+	matchStage, groupStage := filters.AggregateTeamsData(requestBody)
 
 	cursor, err := srvc.accountRequestTaskCollection.Aggregate(srvc.ctx, mongo.Pipeline{matchStage, groupStage})
 

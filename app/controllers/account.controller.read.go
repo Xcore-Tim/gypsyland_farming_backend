@@ -2,14 +2,14 @@ package controllers
 
 import (
 	"gypsyland_farming/app/models"
-	"math"
+
 	"strconv"
 	"strings"
 
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (ctrl AccountRequestController) GetAll(ctx *gin.Context) {
@@ -54,9 +54,8 @@ func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Con
 
 	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-
-	convertPeriod(&requestBody.Period)
 
 	requestBody.Status = status
 
@@ -66,20 +65,8 @@ func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Con
 
 	case 6:
 		ctrl.GetFarmerRequests(ctx, &requestBody)
-	case 2:
-
-		var accountRequestTasks []models.AccountRequestTask
-
-		if err := ctrl.ReadAccountRequestService.GetTeamleadRequests(&requestBody, &accountRequestTasks); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-
-		ctx.JSON(http.StatusOK, accountRequestTasks)
 	case 3, 4, 7:
 		ctrl.GetBuyerRequests(ctx, &requestBody)
-	default:
-
 	}
 }
 
@@ -149,7 +136,7 @@ func (ctrl AccountRequestController) GetFarmerRequests(ctx *gin.Context, request
 		}
 
 		for _, v := range farmersCompletedRequests {
-			v.Total = roundFloat(v.Total, 2)
+			v.Total = ctrl.roundFloat(v.Total, 2)
 		}
 
 		ctx.JSON(http.StatusOK, farmersCompletedRequests)
@@ -164,40 +151,41 @@ func (ctrl AccountRequestController) GetFarmerRequests(ctx *gin.Context, request
 	}
 }
 
-func (ctrl AccountRequestController) GetTeamleadRequests(ctx *gin.Context, requestBody *models.GetRequestBody) {
-	switch requestBody.Status {
-	case 0:
-		var buyerPendingResponse []models.BuyersPendingResponse
-		if err := ctrl.ReadAccountRequestService.GetTeamleadPendingRequests(requestBody, &buyerPendingResponse); err != nil {
-			return
-		}
-		ctx.JSON(http.StatusOK, buyerPendingResponse)
-	case 1:
-		var buyersInworkReponse []models.BuyersInworkResponse
-		if err := ctrl.ReadAccountRequestService.GetTeamleadInworkRequests(requestBody, &buyersInworkReponse); err != nil {
-			return
-		}
-		ctx.JSON(http.StatusOK, buyersInworkReponse)
-	case 2:
-		var buyersCompletedResponse []models.BuyersCompletedResponse
-		if err := ctrl.ReadAccountRequestService.GetTeamleadCompletedRequests(requestBody, &buyersCompletedResponse); err != nil {
-			return
-		}
-		ctx.JSON(http.StatusOK, buyersCompletedResponse)
-	case 3:
-		var buyersCancelledResponse []models.BuyersCancelledResponse
-		if err := ctrl.ReadAccountRequestService.GetTeamleadCancelledRequests(requestBody, &buyersCancelledResponse); err != nil {
-			return
-		}
-		ctx.JSON(http.StatusOK, buyersCancelledResponse)
+func (ctrl AccountRequestController) GetAccountRequestData(ctx *gin.Context) {
+
+	requestID, err := primitive.ObjectIDFromHex(ctx.Param("requestID"))
+
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, err.Error())
+		return
 	}
+
+	accountRequest, err := ctrl.ReadAccountRequestService.GetAccountRequestData(&requestID)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, accountRequest)
 }
 
 func (ctrl AccountRequestController) AggregateFarmersData(ctx *gin.Context) {
 
+	var requestBody models.GetRequestBody
+
+	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	requestBody.Status = models.Complete
+
+	requestBody.Convert()
+
 	var groupedResponse []models.GroupedFarmersResponse
 
-	if err := ctrl.ReadAccountRequestService.AggregateFarmersData(&groupedResponse); err != nil {
+	if err := ctrl.ReadAccountRequestService.AggregateFarmersData(&requestBody, &groupedResponse); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -232,9 +220,20 @@ func (ctrl AccountRequestController) AggregateFarmersData(ctx *gin.Context) {
 }
 
 func (ctrl AccountRequestController) AggregateTeamsData(ctx *gin.Context) {
+
+	var requestBody models.GetRequestBody
+
+	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	requestBody.Status = models.Complete
+
+	requestBody.Convert()
+
 	var groupedResponse []models.GroupedTeamsResponse
 
-	if err := ctrl.ReadAccountRequestService.AggregateTeamsData(&groupedResponse); err != nil {
+	if err := ctrl.ReadAccountRequestService.AggregateTeamsData(&requestBody, &groupedResponse); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -244,30 +243,22 @@ func (ctrl AccountRequestController) AggregateTeamsData(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) AggregateBuyersData(ctx *gin.Context) {
 
-	teamlead_id_str := ctx.Param("user_id")
-	teamlead_id, err := strconv.Atoi(teamlead_id_str)
+	var requestBody models.GetRequestBody
 
-	if err != nil {
+	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	requestBody.Status = models.Complete
+
+	requestBody.Convert()
+
+	var response []models.GroupedBuyersResponse
+
+	if err := ctrl.ReadAccountRequestService.AggregateBuyersData(&requestBody, &response, requestBody.UserData.UserID); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	results := ctrl.ReadAccountRequestService.AggregateBuyersData(teamlead_id)
-	ctx.JSON(http.StatusOK, results)
-}
-
-func convertPeriod(period *models.Period) {
-
-	if period.StartISO == "" {
-		period.EndDate = time.Now()
-	} else {
-		date_format := "2006-01-02"
-		period.EndDate, _ = time.Parse(date_format, period.EndISO)
-		period.StartDate, _ = time.Parse(date_format, period.StartISO)
-	}
-}
-
-func roundFloat(val float64, precision uint) float64 {
-	ratio := math.Pow(10, float64(precision))
-	return math.Round(val*ratio) / ratio
+	ctx.JSON(http.StatusOK, response)
 }

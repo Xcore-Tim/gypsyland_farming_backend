@@ -31,52 +31,12 @@ func (srvc AccountRequestServiceImpl) CreateAccountRequest(accountRequestTask *m
 	return err
 }
 
-func (srvc AccountRequestServiceImpl) UpdateRequest(requestUpdate *models.UpdateAccountRequest) error {
-
-	var accountRequestTask models.AccountRequestTask
-
-	query := bson.D{bson.E{Key: "_id", Value: requestUpdate.RequestID}}
-
-	err := srvc.accountRequestTaskCollection.FindOne(srvc.ctx, query).Decode(&accountRequestTask)
-
-	if err != nil {
-		return err
-	}
-
-	filter := bson.D{bson.E{Key: "_id", Value: accountRequestTask.AccountRequest.ID}}
-	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "quantity", Value: requestUpdate.AccountRequest.Quantity},
-		bson.E{Key: "description", Value: requestUpdate.Description},
-	}}}
-
-	result, _ := srvc.accountRequestCollection.UpdateOne(srvc.ctx, filter, update)
-
-	if result.MatchedCount != 1 {
-		return errors.New("no matched documents found for update")
-	}
-
-	filter = bson.D{bson.E{Key: "_id", Value: requestUpdate.RequestID}}
-	update = bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "accountRequest.quantity", Value: requestUpdate.AccountRequest.Quantity},
-		bson.E{Key: "description", Value: requestUpdate.Description},
-		bson.E{Key: "dateUpdated", Value: time.Now().Unix()},
-	}}}
-
-	result, _ = srvc.accountRequestTaskCollection.UpdateOne(srvc.ctx, filter, update)
-
-	if result.MatchedCount != 1 {
-		return errors.New("no matched documents found for update")
-	}
-
-	return nil
-}
-
-func (srvc AccountRequestServiceImpl) UpdateRequestNew(requestUpdate *models.UpdateAccountRequest) error {
+func (srvc AccountRequestServiceImpl) UpdateRequest(requestUpdate *models.UpdateRequestBody) error {
 
 	filter := bson.D{bson.E{Key: "_id", Value: requestUpdate.RequestID}}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "accountRequest.quantity", Value: requestUpdate.AccountRequest.Quantity},
-		bson.E{Key: "description", Value: requestUpdate.Description},
+		bson.E{Key: "accountRequest", Value: requestUpdate.AccountRequest},
+		bson.E{Key: "description", Value: requestUpdate.UpdateBody.Description},
 		bson.E{Key: "dateUpdated", Value: time.Now().Unix()},
 	}}}
 
@@ -113,6 +73,7 @@ func (srvc AccountRequestServiceImpl) CancelAccountRequest(cancelRequest *models
 		bson.E{Key: "status", Value: models.Canceled},
 		bson.E{Key: "denialReason", Value: cancelRequest.DenialReason},
 		bson.E{Key: "cancelledBy", Value: cancelRequest.CancelledBy},
+		bson.E{Key: "dateCancelled", Value: time.Now().Unix()},
 	}}}
 
 	result, _ := srvc.accountRequestTaskCollection.UpdateOne(srvc.ctx, filter, update)

@@ -42,6 +42,19 @@ func (l *LocationServiceImpl) GetLocation(id primitive.ObjectID) (*models.Locati
 
 }
 
+func (l *LocationServiceImpl) GetLocationByName(name string) (*models.Location, error) {
+
+	var location models.Location
+	query := bson.D{bson.E{Key: "name", Value: name}}
+
+	if err := l.locationCollection.FindOne(l.ctx, query).Decode(&location); err != nil {
+		return &location, errors.New("no locations found")
+	}
+
+	return &location, nil
+
+}
+
 func (l LocationServiceImpl) GetAll() ([]*models.Location, error) {
 
 	var locations []*models.Location

@@ -17,8 +17,8 @@ func BuyerRequestProjection(requestBody *models.GetRequestBody) bson.D {
 			bson.E{Key: "farmer", Value: 1},
 			bson.E{Key: "team", Value: 1},
 			bson.E{Key: "denialReason", Value: 1},
-			bson.E{Key: "date_created", Value: 1},
-			bson.E{Key: "date_updated", Value: 1},
+			bson.E{Key: "dateCreated", Value: 1},
+			bson.E{Key: "dateUpdated", Value: 1},
 			bson.E{Key: "description", Value: 1},
 		}
 	case 1:
@@ -104,6 +104,27 @@ func FarmerRequestProjection(requestBody *models.GetRequestBody) bson.D {
 			bson.E{Key: "dateCancelled", Value: 1},
 			bson.E{Key: "description", Value: 1},
 		}
+	}
+	return projection
+}
+
+func BuyerAggregationProjection() bson.D {
+
+	projection := bson.D{
+
+		bson.E{Key: "accountRequest", Value: 1},
+		bson.E{Key: "buyer", Value: 1},
+		bson.E{Key: "price", Value: 1},
+		bson.E{Key: "valid", Value: 1},
+		bson.E{Key: "totalSum", Value: 1},
+	}
+
+	return projection
+}
+
+func TeamsProjection() bson.D {
+	projection := bson.D{
+		bson.E{Key: "number", Value: 1},
 	}
 	return projection
 }

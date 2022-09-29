@@ -78,13 +78,13 @@ func init() {
 	positionService = services.NewPositionService(positionCollection, ctx)
 	positionController = controllers.NewPositionController(positionService)
 
-	teamCollection = mongoClient.Database("gypsyland").Collection("teams")
-	teamService = services.NewTeamsService(teamCollection, ctx)
-	teamController = controllers.NewTeamController(teamService)
-
 	teamAccessCollection = mongoClient.Database("gypsyland").Collection("teamAccess")
 	teamAccessService = services.NewTeamAccessService(teamAccessCollection, ctx)
 	teamAccessController = controllers.NewTeamAccessController(teamAccessService)
+
+	teamCollection = mongoClient.Database("gypsyland").Collection("teams")
+	teamService = services.NewTeamsService(teamCollection, ctx)
+	teamController = controllers.NewTeamController(teamService, teamAccessService)
 
 	accountRequestCollection = mongoClient.Database("gypsyland").Collection("accountRequests")
 	accountRequestTaskCollection = mongoClient.Database("gypsyland").Collection("accountRequestTasks")

@@ -62,7 +62,7 @@ func (ctrl AuthController) Login(ctx *gin.Context) {
 	postRequest, err := http.NewRequest(http.MethodPost, urlPath, bodyReader)
 
 	if err != nil {
-		DenyAuthentication(&authResponse, err, ctx)
+		ctrl.DenyAuthentication(&authResponse, err, ctx)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (ctrl AuthController) Login(ctx *gin.Context) {
 	resp, err := client.Do(postRequest)
 
 	if err != nil {
-		DenyAuthentication(&authResponse, err, ctx)
+		ctrl.DenyAuthentication(&authResponse, err, ctx)
 		return
 	}
 
@@ -80,20 +80,20 @@ func (ctrl AuthController) Login(ctx *gin.Context) {
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		DenyAuthentication(&authResponse, err, ctx)
+		ctrl.DenyAuthentication(&authResponse, err, ctx)
 		return
 	}
 
 	var userData models.UserData
 
 	if err = json.Unmarshal([]byte(body), &userData); err != nil {
-		DenyAuthentication(&authResponse, err, ctx)
+		ctrl.DenyAuthentication(&authResponse, err, ctx)
 		return
 	}
 
 	var userResponse userResponse
 
-	if err := GetFullname(&userResponse, &userData); err != nil {
+	if err := ctrl.GetFullname(&userResponse, &userData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -116,13 +116,13 @@ func (ctrl AuthController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 }
 
-func DenyAuthentication(authReponse *models.AuthRequestData, err error, ctx *gin.Context) {
+func (ctrl AuthController) DenyAuthentication(authReponse *models.AuthRequestData, err error, ctx *gin.Context) {
 	authReponse.Meta.Error = err.Error()
 	authReponse.Meta.Message = "Error"
 	ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
 }
 
-func GetFullname(userResponse *userResponse, userData *models.UserData) error {
+func (ctrl AuthController) GetFullname(userResponse *userResponse, userData *models.UserData) error {
 
 	endpoint := "/v1/Identity/users/"
 	urlPath := models.Basepath + endpoint + strconv.Itoa(userData.UserID)

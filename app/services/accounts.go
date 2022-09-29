@@ -7,13 +7,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func (srvc AccountRequestServiceImpl) GetAccountRequestData(requestID *primitive.ObjectID) (*models.AccountRequest, error) {
+
+	var accountRequest models.AccountRequest
+
+	if err := srvc.accountRequestCollection.FindOne(srvc.ctx, bson.D{bson.E{Key: "_id", Value: requestID}}).Decode(&accountRequest); err != nil {
+		return &accountRequest, err
+	}
+	return &accountRequest, nil
+}
+
 type ReadAccountRequestService interface {
 	GetAll() ([]*models.AccountRequestTask, error)
 
 	GetRequest(*primitive.ObjectID) (*models.AccountRequestTask, error)
+	GetAccountRequestData(*primitive.ObjectID) (*models.AccountRequest, error)
 
-	GetTLFARequests(*models.GetRequestBody, *[]models.AccountRequestTask) error
-	GetTeamleadRequests(*models.GetRequestBody, *[]models.AccountRequestTask) error
 	GetRequests(*models.GetRequestBody, *[]models.AccountRequestTask, models.GetFunctions) error
 
 	GetFarmerPeindingRequests(*models.GetRequestBody, *[]models.FarmersPendingResponse, models.TeamAccess) error
@@ -26,20 +35,14 @@ type ReadAccountRequestService interface {
 	GetBuyerCompletedRequests(*models.GetRequestBody, *[]models.BuyersCompletedResponse) error
 	GetBuyerCancelledRequests(*models.GetRequestBody, *[]models.BuyersCancelledResponse) error
 
-	GetTeamleadPendingRequests(*models.GetRequestBody, *[]models.BuyersPendingResponse) error
-	GetTeamleadInworkRequests(*models.GetRequestBody, *[]models.BuyersInworkResponse) error
-	GetTeamleadCompletedRequests(*models.GetRequestBody, *[]models.BuyersCompletedResponse) error
-	GetTeamleadCancelledRequests(*models.GetRequestBody, *[]models.BuyersCancelledResponse) error
-
-	AggregateFarmersData(*[]models.GroupedFarmersResponse) error
-	AggregateTeamsData(*[]models.GroupedTeamsResponse) error
-	AggregateBuyersData(teamlead_id int) []bson.M
+	AggregateFarmersData(*models.GetRequestBody, *[]models.GroupedFarmersResponse) error
+	AggregateTeamsData(*models.GetRequestBody, *[]models.GroupedTeamsResponse) error
+	AggregateBuyersData(*models.GetRequestBody, *[]models.GroupedBuyersResponse, int) error
 }
 
 type WriteAccountRequestService interface {
 	CreateAccountRequest(*models.AccountRequestTask) error
-	UpdateRequest(*models.UpdateAccountRequest) error
-	UpdateRequestNew(*models.UpdateAccountRequest) error
+	UpdateRequest(*models.UpdateRequestBody) error
 
 	TakeAccountRequest(*models.TakeAccountRequest) error
 	CancelAccountRequest(*models.CancelAccountRequest) error
@@ -53,4 +56,5 @@ type AccountTypesService interface {
 	CreateAccountType(*models.AccountType) error
 	GetAll() ([]*models.AccountType, error)
 	GetType(primitive.ObjectID) (*models.AccountType, error)
+	GetTypeByName(string) (*models.AccountType, error)
 }
