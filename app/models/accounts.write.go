@@ -8,7 +8,15 @@ type AccountRequestBody struct {
 	TypeID      string `json:"typeId"`
 	LocationID  string `json:"locationId"`
 	Quantity    string `json:"quantity"`
+	Price       string `json:"price"`
 	Description string `json:"description"`
+}
+
+type AccountRequestData struct {
+	TypeID     primitive.ObjectID
+	LocationID primitive.ObjectID
+	Quantity   int
+	Price      float64
 }
 
 type CancelAccountRequest struct {
@@ -18,6 +26,13 @@ type CancelAccountRequest struct {
 	UserData     UserData
 	RequestID    primitive.ObjectID
 	CancelledBy  Employee
+}
+
+type CreateAccountRequestBody struct {
+	UserIdentity       UserIdentity       `json:"userIdentity"`
+	AccountRequestBody AccountRequestBody `json:"accountRequest"`
+	UserData           UserData           `json:"userData,omitempty"`
+	AccountRequestData AccountRequestData
 }
 
 type CloseOrderInfo struct {
@@ -36,12 +51,6 @@ type CompleteAccountRequest struct {
 	RequestID    primitive.ObjectID
 }
 
-type CreateAccountRequestBody struct {
-	UserIdentity   UserIdentity       `json:"userIdentity"`
-	AccountRequest AccountRequestBody `json:"accountRequest"`
-	UserData       UserData           `json:"userData,omitempty"`
-}
-
 type TakeAccountRequest struct {
 	OrderID      string       `json:"orderID"`
 	UserIdentity UserIdentity `json:"userIdentity"`
@@ -49,16 +58,6 @@ type TakeAccountRequest struct {
 	UserData     UserData
 	Farmer       Employee
 }
-
-// type UpdateRequestBody struct {
-// 	OrderID        string             `json:"orderID"`
-// 	UserIdentity   UserIdentity       `json:"userIdentity"`
-// 	UpdateBody     AccountRequestBody `json:"updateBody"`
-// 	RequestID      primitive.ObjectID
-// 	UserData       UserData
-// 	UpdateData     UpdateRequestData
-// 	AccountRequest AccountRequest
-// }
 
 type UpdateRequestBody struct {
 	OrderID        string            `json:"orderID"`
@@ -68,12 +67,6 @@ type UpdateRequestBody struct {
 	UserData       UserData
 	AccountRequest AccountRequest
 }
-
-// type UpdateRequestData struct {
-// 	TypeID     primitive.ObjectID
-// 	LocationID primitive.ObjectID
-// 	Quantity   int
-// }
 
 type UpdateRequestData struct {
 	AccountType string `json:"accountType"`

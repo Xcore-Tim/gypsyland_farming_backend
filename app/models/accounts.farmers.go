@@ -14,6 +14,7 @@ type FarmersPendingResponse struct {
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`
 	Description    string             `json:"description" bson:"description"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }
 
 type FarmersInworkResponse struct {
@@ -26,6 +27,7 @@ type FarmersInworkResponse struct {
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`
 	Description    string             `json:"description" bson:"description"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }
 
 type FarmersCompletedResponse struct {
@@ -49,11 +51,13 @@ type FarmersCancelledResponse struct {
 	AccountRequest AccountRequest     `json:"accountRequest" bson:"accountRequest"`
 	Status         int                `json:"status" bson:"status"`
 	Buyer          Employee           `json:"buyer" bson:"buyer"`
+	CancelledBy    Employee           `json:"cancelledBy" bson:"cancelledBy"`
 	Team           Team               `json:"team" bson:"team"`
 	DenialReason   string             `json:"denialReason" bson:"denialReason"`
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateCancelled  int64              `json:"dateCancelled" bson:"dateCancelled"`
 	Description    string             `json:"description" bson:"description"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }
 
 type GroupedFarmersResponse struct {

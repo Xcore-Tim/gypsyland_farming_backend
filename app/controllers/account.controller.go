@@ -69,6 +69,8 @@ func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	deleteGroup := accountRequestGroup.Group("/delete")
 	deleteGroup.POST("/:request_id", ctrl.DeleteAccountRequest)
+
+	accountRequestGroup.POST("/test", ctrl.Test)
 }
 
 func (ctrl AccountRequestController) roundFloat(val float64, precision uint) float64 {

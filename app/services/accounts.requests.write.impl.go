@@ -49,6 +49,28 @@ func (srvc AccountRequestServiceImpl) UpdateRequest(requestUpdate *models.Update
 	return nil
 }
 
+func (srvc AccountRequestServiceImpl) UpdateDownloadLink(downloadLink, oid string) error {
+
+	requestID, err := primitive.ObjectIDFromHex(oid)
+
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{bson.E{Key: "_id", Value: requestID}}
+	update := bson.D{bson.E{Key: "$set", Value: bson.D{
+		bson.E{Key: "downloadLink", Value: downloadLink},
+	}}}
+
+	result := srvc.accountRequestTaskCollection.FindOneAndUpdate(srvc.ctx, filter, update)
+
+	if result.Err() != nil {
+		return errors.New("no matched documents found for update")
+	}
+
+	return nil
+}
+
 func (srvc AccountRequestServiceImpl) TakeAccountRequest(requestData *models.TakeAccountRequest) error {
 
 	filter := bson.D{bson.E{Key: "_id", Value: requestData.RequestID}}
@@ -107,25 +129,21 @@ func (srvc AccountRequestServiceImpl) CompleteAccountRequest(accountRequestCompl
 	return nil
 }
 
-func (srvc AccountRequestServiceImpl) ReturnAccountRequest(request_id *primitive.ObjectID) (*models.AccountRequestTask, error) {
-	var accountRequestTask models.AccountRequestTask
+func (srvc AccountRequestServiceImpl) ReturnAccountRequest(requestID *primitive.ObjectID) error {
 
-	filter := bson.D{bson.E{Key: "_id", Value: request_id}}
+	filter := bson.D{bson.E{Key: "_id", Value: requestID}}
+	update := bson.D{bson.E{Key: "$set", Value: bson.D{
+		bson.E{Key: "status", Value: models.Complete},
+		bson.E{Key: "farmer", Value: nil},
+	}}}
 
-	err := srvc.accountRequestTaskCollection.FindOne(srvc.ctx, filter).Decode(&accountRequestTask)
+	result := srvc.accountRequestTaskCollection.FindOneAndUpdate(srvc.ctx, filter, update)
 
-	if err != nil {
-		return nil, errors.New("no matched documents found to return to pending")
+	if result.Err() != nil {
+		return errors.New("no matched documents found for update")
 	}
 
-	newAccountRequestTask := models.AccountRequestTask{
-		AccountRequest: accountRequestTask.AccountRequest,
-		Description:    accountRequestTask.Description,
-		Buyer:          accountRequestTask.Buyer,
-		Team:           accountRequestTask.Team,
-	}
-
-	return &newAccountRequestTask, nil
+	return nil
 }
 
 func (srvc AccountRequestServiceImpl) DeleteAccountRequest(id *primitive.ObjectID) error {

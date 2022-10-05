@@ -23,7 +23,7 @@ func NewAuthService(ctx context.Context) AuthService {
 
 func (srvc AuthServiceImpl) Login(authData *models.UserCredentials, authResponse *models.AuthResponseData) error {
 
-	client := &http.Client{}
+	// client := &http.Client{}
 
 	urlPath := models.Basepath + models.EndpointAuth
 
@@ -42,15 +42,21 @@ func (srvc AuthServiceImpl) Login(authData *models.UserCredentials, authResponse
 
 	postRequest.Header.Set("Content-Type", models.ContentTypeAuth)
 
-	resp, err := client.Do(postRequest)
+	// resp, err := client.Do(postRequest)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
-	defer resp.Body.Close()
+	// defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	// body, err := io.ReadAll(resp.Body)
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	body, err := srvc.ClientRequest(postRequest)
 
 	if err != nil {
 		return err
@@ -93,17 +99,23 @@ func (srvc AuthServiceImpl) GetFullname(user *models.Username, userData *models.
 
 	request.Header.Add("Authorization", bearer)
 
-	client := &http.Client{}
+	// client := &http.Client{}
 
-	response, err := client.Do(request)
+	// response, err := client.Do(request)
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	// defer response.Body.Close()
+
+	// body, _ := io.ReadAll(response.Body)
+
+	body, err := srvc.ClientRequest(request)
 
 	if err != nil {
 		return err
 	}
-
-	defer response.Body.Close()
-
-	body, _ := io.ReadAll(response.Body)
 
 	if err = json.Unmarshal([]byte(body), &user); err != nil {
 		return err
@@ -115,4 +127,24 @@ func (srvc AuthServiceImpl) GetFullname(user *models.Username, userData *models.
 func (srvc AuthServiceImpl) AuthError(response *models.AuthResponseData, errorText string) {
 	response.Meta.Error = errorText
 	response.Meta.Message = "error"
+}
+
+func (srvc AuthServiceImpl) ClientRequest(request *http.Request) ([]byte, error) {
+	client := &http.Client{}
+
+	response, err := client.Do(request)
+
+	if err != nil {
+		panic("error making a request")
+	}
+
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		panic("error reading body")
+	}
+
+	return body, nil
 }

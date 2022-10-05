@@ -17,6 +17,7 @@ type BuyersPendingResponse struct {
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`
 	Description    string             `json:"description" bson:"description"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }
 
 type BuyersInworkResponse struct {
@@ -29,6 +30,7 @@ type BuyersInworkResponse struct {
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`
 	Description    string             `json:"description" bson:"description"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }
 
 type BuyersCompletedResponse struct {
@@ -52,11 +54,13 @@ type BuyersCancelledResponse struct {
 	AccountRequest AccountRequest     `json:"accountRequest" bson:"accountRequest"`
 	Status         int                `json:"status" bson:"status"`
 	Farmer         Employee           `json:"farmer" bson:"farmer"`
+	CancelledBy    Employee           `json:"cancelledBy" bson:"cancelledBy"`
 	Team           Team               `json:"team" bson:"team"`
 	DenialReason   string             `json:"denialReason" bson:"denialReason"`
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateCancelled  int64              `json:"dateCancelled" bson:"dateCancelled"`
 	Description    string             `json:"description" bson:"description"`
+	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
 }
 
 type GroupedBuyersResponse struct {

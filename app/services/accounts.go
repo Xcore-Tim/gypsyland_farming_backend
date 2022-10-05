@@ -43,11 +43,12 @@ type ReadAccountRequestService interface {
 type WriteAccountRequestService interface {
 	CreateAccountRequest(*models.AccountRequestTask) error
 	UpdateRequest(*models.UpdateRequestBody) error
+	UpdateDownloadLink(string, string) error
 
 	TakeAccountRequest(*models.TakeAccountRequest) error
 	CancelAccountRequest(*models.CancelAccountRequest) error
 	CompleteAccountRequest(*models.CompleteAccountRequest) error
-	ReturnAccountRequest(*primitive.ObjectID) (*models.AccountRequestTask, error)
+	ReturnAccountRequest(*primitive.ObjectID) error
 
 	DeleteAccountRequest(*primitive.ObjectID) error
 }

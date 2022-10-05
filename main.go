@@ -48,6 +48,9 @@ var (
 	authService    services.AuthService
 	jwtService     services.JWTService
 	authController controllers.AuthController
+
+	fileService    services.FileService
+	fileController controllers.FileController
 )
 
 func init() {
@@ -100,9 +103,24 @@ func init() {
 	jwtService = services.NewJWTService()
 	authController = controllers.NewAuthController(jwtService, authService, teamService)
 
-	server = gin.Default()
-	server.Use(cors.Default())
+	fileService = services.NewFileService(ctx)
+	fileController = controllers.NewFileController(fileService, writeAccountRequestService)
 
+	server = gin.Default()
+
+	server.Use(cors.New(NewCORS()))
+
+}
+
+func NewCORS() cors.Config {
+	config := cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET", "OPTIIN", "DELETE"},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
+	}
+
+	return config
 }
 
 func main() {
@@ -118,6 +136,7 @@ func main() {
 	authController.RegisterUserRoutes(basepath)
 	teamController.RegisterUserRoutes(basepath)
 	teamAccessController.RegisterUserRoutes(basepath)
+	fileController.RegisterUserRoutes(basepath)
 
 	log.Fatal(server.Run(":9090"))
 

@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"gypsyland_farming/app/models"
-	"strconv"
+
 	"time"
 
 	"net/http"
@@ -12,44 +12,37 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func (ctrl AccountRequestController) Test(ctx *gin.Context) {
+
+	oid := ctx.Query("oid")
+	ctx.JSON(http.StatusOK, oid)
+}
+
 func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
 	var requestBody models.CreateAccountRequestBody
 
 	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
 	}
+
+	requestBody.Convert()
 
 	var accountRequestTask models.AccountRequestTask
 
-	if locationID, err := primitive.ObjectIDFromHex(requestBody.AccountRequest.LocationID); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": locationID})
+	location, err := ctrl.LocationService.GetLocation(requestBody.AccountRequestData.LocationID)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	} else {
-		if location, err := ctrl.LocationService.GetLocation(locationID); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": location})
-			return
-		} else {
-			accountRequestTask.AccountRequest.Location = *location
-		}
 	}
 
-	if accountTypeID, err := primitive.ObjectIDFromHex(requestBody.AccountRequest.TypeID); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": accountTypeID})
+	accountType, err := ctrl.AccountTypesService.GetType(requestBody.AccountRequestData.TypeID)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	} else {
-		if accountType, err := ctrl.AccountTypesService.GetType(accountTypeID); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": accountType})
-			return
-		} else {
-			accountRequestTask.AccountRequest.Type = *accountType
-		}
 	}
-
-	accountRequestTask.AccountRequest.Quantity, _ = strconv.Atoi(requestBody.AccountRequest.Quantity)
-
-	requestBody.Convert()
 
 	team, err := ctrl.TeamService.GetTeamByNum(requestBody.UserData.TeamID)
 
@@ -58,10 +51,15 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 		return
 	}
 
-	accountRequestTask.Team = *team
-	accountRequestTask.DateCreated = time.Now().Unix()
-	accountRequestTask.Description = requestBody.AccountRequest.Description
+	accountRequestTask.AccountRequest.Location = *location
+	accountRequestTask.AccountRequest.Type = *accountType
+	accountRequestTask.AccountRequest.Quantity = requestBody.AccountRequestData.Quantity
 
+	accountRequestTask.DateCreated = time.Now().Unix()
+	accountRequestTask.Description = requestBody.AccountRequestBody.Description
+	accountRequestTask.Price = requestBody.AccountRequestData.Price
+
+	accountRequestTask.Team = *team
 	accountRequestTask.Buyer.ID = requestBody.UserData.UserID
 	accountRequestTask.Buyer.Name = requestBody.UserData.Username
 	accountRequestTask.Buyer.Position = requestBody.UserData.RoleID
@@ -71,7 +69,7 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+	ctx.JSON(http.StatusOK, gin.H{"message": accountRequestTask.ID})
 }
 
 func (ctrl AccountRequestController) UpdateRequest(ctx *gin.Context) {
@@ -191,32 +189,14 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) ReturnAccountRequest(ctx *gin.Context) {
 
-	request_id, _ := primitive.ObjectIDFromHex(ctx.Param("request_id"))
+	requestID, _ := primitive.ObjectIDFromHex(ctx.Param("requestID"))
 
-	accountRequestTask, err := ctrl.WriteAccountRequestService.ReturnAccountRequest(&request_id)
-
-	if err != nil {
+	if err := ctrl.WriteAccountRequestService.ReturnAccountRequest(&requestID); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	accountRequestTask.AccountRequest.ID = primitive.NewObjectID()
-
-	err = ctrl.WriteAccountRequestService.CreateAccountRequest(accountRequestTask)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": accountRequestTask.AccountRequest.ID})
-
-	err = ctrl.WriteAccountRequestService.DeleteAccountRequest(&request_id)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"deleted": err.Error()})
-		return
-	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 func (ctrl AccountRequestController) DeleteAccountRequest(ctx *gin.Context) {

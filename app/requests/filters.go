@@ -27,18 +27,6 @@ func FarmerRequestFilter(requestBody *models.GetRequestBody, teamAccess models.T
 
 	switch requestBody.Status {
 	case 0:
-		// filter = bson.D{
-		// 	bson.E{Key: "$and", Value: bson.A{
-		// 		bson.D{
-		// 			bson.E{Key: "team.number", Value: bson.D{{Key: "$in", Value: teamAccess.Teams}}},
-		// 			bson.E{Key: "status", Value: requestBody.Status},
-		// 			bson.E{Key: "$and", Value: bson.A{
-		// 				bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
-		// 				bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
-		// 			}},
-		// 		},
-		// 	}},
-		// }
 
 		filter = bson.D{
 			bson.E{Key: "$and", Value: bson.A{
@@ -121,7 +109,7 @@ func AggregateFarmersData(requestBody *models.GetRequestBody) (bson.D, bson.D) {
 				{Key: "$sum", Value: "$valid"},
 			}},
 			{Key: "quantity", Value: bson.D{
-				{Key: "$sum", Value: "$account_request.quantity"},
+				{Key: "$sum", Value: "$accountRequest.quantity"},
 			}},
 		}}}
 

@@ -25,9 +25,12 @@ func ConvertPeriod(period *Period) {
 
 	if period.StartISO == "" {
 		period.EndDate = time.Now()
+	} else if period.EndISO == "" {
+		period.EndDate = time.Now()
 	} else {
 		date_format := "2006-01-02"
 		period.EndDate, _ = time.Parse(date_format, period.EndISO)
 		period.StartDate, _ = time.Parse(date_format, period.StartISO)
 	}
+
 }
