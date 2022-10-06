@@ -10,12 +10,14 @@ import (
 func BuyerRequestFilter(requestBody *models.GetRequestBody) bson.D {
 
 	filter := bson.D{
-		bson.E{Key: "buyer.id", Value: requestBody.UserData.UserID},
-		bson.E{Key: "status", Value: requestBody.Status},
 		bson.E{Key: "$and", Value: bson.A{
-			bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
-			bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
-		}},
+			bson.D{
+				bson.E{Key: "buyer.id", Value: requestBody.UserData.UserID},
+				bson.E{Key: "status", Value: requestBody.Status},
+				bson.E{Key: "dateCreated", Value: bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+				bson.E{Key: "dateCreated", Value: bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+			}},
+		},
 	}
 
 	return filter
@@ -63,22 +65,6 @@ func TeamleadRequestFilter(requestBody *models.GetRequestBody) bson.D {
 			bson.D{
 				bson.E{Key: "status", Value: requestBody.Status},
 				bson.E{Key: "team.id", Value: requestBody.UserData.TeamID},
-				bson.E{Key: "dateCreated", Value: bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
-				bson.E{Key: "dateCreated", Value: bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
-			},
-		},
-		},
-	}
-
-	return filter
-}
-
-func TLFAdminRequest(requestBody *models.GetRequestBody) bson.D {
-
-	filter := bson.D{
-		bson.E{Key: "$and", Value: bson.A{
-			bson.D{
-				bson.E{Key: "status", Value: requestBody.Status},
 				bson.E{Key: "dateCreated", Value: bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
 				bson.E{Key: "dateCreated", Value: bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
 			},

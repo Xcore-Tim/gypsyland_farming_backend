@@ -10,16 +10,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type FileController struct {
-	FileService           services.FileService
-	AccountRequestService services.WriteAccountRequestService
-}
-
-type Input struct {
-	Model string `form:"model,omitempty" binding:"required"`
+	FileService services.FileService
 }
 
 type Response struct {
@@ -29,15 +23,20 @@ type Response struct {
 	Name           string `json:"name"`
 }
 
-func NewFileController(fileService services.FileService, accountRequestService services.WriteAccountRequestService) FileController {
+func NewFileController(fileService services.FileService) FileController {
 	return FileController{
-		FileService:           fileService,
-		AccountRequestService: accountRequestService,
+		FileService: fileService,
 	}
 }
 
 func (ctrl FileController) UploadFile(ctx *gin.Context) {
+
 	var f *os.File
+
+	response := &Response{
+		Success:     false,
+		FileMessage: "Keep uploading chunks",
+	}
 
 	file, uploadFile, err := ctx.Request.FormFile("file")
 
@@ -69,26 +68,19 @@ func (ctrl FileController) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	var input Input
+	basePath := ctrl.FileService.ReturnBasePath()
 
-	input.Model = "static"
-	tempDir, err := os.UserHomeDir()
-
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "error resolving home directory"})
-	}
-
-	if _, err := os.Stat(tempDir + "/" + input.Model); os.IsNotExist(err) {
-		if err := os.Mkdir(tempDir+"/"+input.Model, 0777); err != nil {
+	if _, err := os.Stat(basePath); os.IsNotExist(err) {
+		if err := os.Mkdir(basePath, 0777); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "error creating temporary directory"})
 			return
 		}
 	}
 
 	if f == nil {
-		f, err = os.OpenFile(tempDir+"/"+input.Model+"/"+uploadFile.Filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err = os.OpenFile(basePath+"/"+uploadFile.Filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating file"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
@@ -100,41 +92,40 @@ func (ctrl FileController) UploadFile(ctx *gin.Context) {
 
 	f.Close()
 
-	response := &Response{
-		Success:     true,
-		FileMessage: "Keep uploading chunks",
-	}
+	response.Success = true
 
 	if rangeMax >= filesize-1 {
 
-		builtFile := tempDir + "/" + input.Model + "/" + uploadFile.Filename
+		fileExt := filepath.Ext(ctx.Request.FormValue("fileName"))
 
-		finalFile, err := os.Open(builtFile)
+		fileName, filePath, err := ctrl.FileService.CreateNewFile(uploadFile, fileExt)
 
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "failed to upload file"})
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
-		finalFile.Close()
+		oid := ctx.Query("oid")
 
-		uploadFileName := ctx.Request.FormValue("fileName")
-		fileExt := filepath.Ext(uploadFileName)
+		oldFile, isFound, err := ctrl.FileService.CheckPreviousFile(oid)
 
-		fileName := uuid.NewString()
-		newName := tempDir + "/" + input.Model + "/" + fileName + fileExt
-
-		if err := os.Rename(builtFile, newName); err != nil {
-			newName = builtFile
+		if err != nil {
+			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		}
 
-		oid := ctx.Query("oid")
-		if err := ctrl.AccountRequestService.UpdateDownloadLink(fileName, oid); err != nil {
+		if isFound {
+			if err := ctrl.FileService.DeletePreviousFile(oldFile); err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			}
+		}
+
+		if err := ctrl.FileService.UpdateDownloadLink(fileName, oid); err != nil {
 			response.AccountMessage = "Error updating account request"
 		}
 
 		response.Success = true
-		response.Name = newName
+		response.Name = filePath
+		response.FileMessage = "File uploaded successfuly"
 		response.AccountMessage = "Account request updated successfuly"
 
 		ctx.JSON(http.StatusOK, response)
@@ -146,32 +137,45 @@ func (ctrl FileController) UploadFile(ctx *gin.Context) {
 
 func (ctrl FileController) DownloadFile(ctx *gin.Context) {
 
-	tempDir, err := os.UserHomeDir()
-
-	if err != nil {
-		return
-	}
-
-	basePath := tempDir + "/static/"
 	fileName := ctx.Query("filename")
-	targetPath := filepath.Join(basePath, fileName)
 
-	ctx.JSON(http.StatusOK, targetPath)
+	downloadPath := ctrl.FileService.ReturnDownloadPath(fileName)
 
-	if !strings.HasPrefix(filepath.Clean(targetPath), basePath) {
-		ctx.JSON(http.StatusForbidden, "forbidden")
-		return
+	ctx.String(http.StatusOK, downloadPath)
+
+}
+
+func (ctrl FileController) CheckPreviousFile(ctx *gin.Context) {
+	oid := ctx.Query("oid")
+
+	oldFile, isFound, err := ctrl.FileService.CheckPreviousFile(oid)
+	host, _ := os.Hostname()
+	ctx.JSON(http.StatusAccepted, gin.H{"host": host, "filepath": oldFile, "found": isFound, "err": err})
+	ctx.JSON(http.StatusAccepted, host+"/"+oldFile)
+}
+
+func (ctrl FileController) DeleteFilesInDir(ctx *gin.Context) {
+
+	homeDir, _ := os.UserHomeDir()
+	fullpath := homeDir + "/static/"
+	dir, _ := os.ReadDir(fullpath)
+
+	for i := range dir {
+		file := dir[i]
+		fileName := file.Name()
+		filePath := fullpath + fileName
+
+		os.Remove(filePath)
+
 	}
 
-	ctx.Header("Content-Description", "File Transfer")
-	ctx.Header("Content-Transfer-Encoding", "binary")
-	ctx.Header("Content-Disposition", "attachment; filename="+fileName)
-	ctx.Header("Content-Type", "application/octet-stream")
-	ctx.File(targetPath)
+	ctx.JSON(http.StatusOK, "success")
 }
 
 func (ctrl FileController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	fileGroup := rg.Group("/file")
 	fileGroup.POST("/upload", ctrl.UploadFile)
 	fileGroup.POST("/download", ctrl.DownloadFile)
+	fileGroup.POST("/check", ctrl.CheckPreviousFile)
+	fileGroup.POST("/dir", ctrl.DeleteFilesInDir)
 }

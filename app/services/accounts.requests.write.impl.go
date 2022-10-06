@@ -49,28 +49,6 @@ func (srvc AccountRequestServiceImpl) UpdateRequest(requestUpdate *models.Update
 	return nil
 }
 
-func (srvc AccountRequestServiceImpl) UpdateDownloadLink(downloadLink, oid string) error {
-
-	requestID, err := primitive.ObjectIDFromHex(oid)
-
-	if err != nil {
-		return err
-	}
-
-	filter := bson.D{bson.E{Key: "_id", Value: requestID}}
-	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "downloadLink", Value: downloadLink},
-	}}}
-
-	result := srvc.accountRequestTaskCollection.FindOneAndUpdate(srvc.ctx, filter, update)
-
-	if result.Err() != nil {
-		return errors.New("no matched documents found for update")
-	}
-
-	return nil
-}
-
 func (srvc AccountRequestServiceImpl) TakeAccountRequest(requestData *models.TakeAccountRequest) error {
 
 	filter := bson.D{bson.E{Key: "_id", Value: requestData.RequestID}}
@@ -131,45 +109,22 @@ func (srvc AccountRequestServiceImpl) CompleteAccountRequest(accountRequestCompl
 
 func (srvc AccountRequestServiceImpl) ReturnAccountRequest(requestID *primitive.ObjectID) error {
 
+	farmer := &models.Employee{
+		ID:       0,
+		Name:     "",
+		Position: 0,
+	}
+
 	filter := bson.D{bson.E{Key: "_id", Value: requestID}}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "status", Value: models.Complete},
-		bson.E{Key: "farmer", Value: nil},
+		bson.E{Key: "status", Value: models.Pending},
+		bson.E{Key: "farmer", Value: farmer},
 	}}}
 
 	result := srvc.accountRequestTaskCollection.FindOneAndUpdate(srvc.ctx, filter, update)
 
 	if result.Err() != nil {
 		return errors.New("no matched documents found for update")
-	}
-
-	return nil
-}
-
-func (srvc AccountRequestServiceImpl) DeleteAccountRequest(id *primitive.ObjectID) error {
-
-	var accountRequestTask models.AccountRequestTask
-
-	taskFilter := bson.D{bson.E{Key: "_id", Value: id}}
-
-	err := srvc.accountRequestTaskCollection.FindOne(srvc.ctx, taskFilter).Decode(&accountRequestTask)
-
-	if err != nil {
-		return errors.New("no matched tasks found to delete")
-	}
-
-	requestFilter := bson.D{bson.E{Key: "_id", Value: accountRequestTask.AccountRequest.ID}}
-
-	requestResult, _ := srvc.accountRequestCollection.DeleteOne(srvc.ctx, requestFilter)
-
-	if requestResult.DeletedCount != 1 {
-		return errors.New("no matched requests found to delete")
-	}
-
-	taskResult, _ := srvc.accountRequestTaskCollection.DeleteOne(srvc.ctx, taskFilter)
-
-	if taskResult.DeletedCount != 1 {
-		return errors.New("no matched tasks found to delete")
 	}
 
 	return nil

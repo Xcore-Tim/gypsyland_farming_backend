@@ -1,10 +1,13 @@
 package services
 
-import (
-	"mime/multipart"
-	"os"
-)
+import "mime/multipart"
 
 type FileService interface {
-	UploadFile(*multipart.File, *multipart.FileHeader) (*os.File, error)
+	CreateNewFile(*multipart.FileHeader, string) (string, string, error)
+	CheckPreviousFile(string) (string, bool, error)
+	DeletePreviousFile(string) error
+	UpdateDownloadLink(string, string) error
+	ReturnBasePath() string
+	ReturnDownloadPath(string) string
+	DeleteFilesInDir() error
 }

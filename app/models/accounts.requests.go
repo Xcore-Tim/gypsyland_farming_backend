@@ -50,4 +50,12 @@ type AccountRequestTask struct {
 	Description    string             `json:"description" bson:"description"`
 	DenialReason   string             `json:"denialReason" bson:"denialReason"`
 	DownloadLink   string             `json:"downloadLink" bson:"downloadLink"`
+	FileName       string             `json:"fileName" bson:"fileName"`
+}
+
+type GetRequestBody struct {
+	Period       Period       `json:"period"`
+	UserIdentity UserIdentity `json:"userIdentity"`
+	UserData     UserData     `json:"userData"`
+	Status       int
 }

@@ -65,7 +65,7 @@ func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Con
 
 	case 6:
 		ctrl.GetFarmerRequests(&requestBody, ctx)
-	case 3, 4, 7:
+	case 2, 3, 4, 7:
 		ctrl.GetBuyerRequests(&requestBody, ctx)
 	}
 }
@@ -136,7 +136,7 @@ func (ctrl AccountRequestController) GetFarmerRequests(requestBody *models.GetRe
 		}
 
 		for _, v := range farmersCompletedRequests {
-			v.Total = ctrl.roundFloat(v.Total, 2)
+			v.Total = ctrl.WriteAccountRequestService.RoundFloat(v.Total, 2)
 		}
 
 		ctx.JSON(http.StatusOK, farmersCompletedRequests)

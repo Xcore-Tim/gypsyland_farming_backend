@@ -1,11 +1,8 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-type GetFunctions func(requestBody *GetRequestBody) bson.D
 
 type BuyersPendingResponse struct {
 	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`

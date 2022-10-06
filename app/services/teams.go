@@ -7,7 +7,7 @@ import (
 type TeamService interface {
 	CreateTeam(*models.Team) error
 	GetAllTeams() (*[]models.Team, error)
-	GetDropdown(*models.TeamAccess, *models.EditTeamAccessRequest) (*[]models.TeamNumber, error)
+	GetDropdown(*models.TeamAccess, *models.EditTeamAccessRequest) (*[]teamNumber, error)
 	GetTLTeam(*models.Employee) (*models.Team, error)
 	GetTeamByNum(int) (*models.Team, error)
 	ImportTeams(string) error

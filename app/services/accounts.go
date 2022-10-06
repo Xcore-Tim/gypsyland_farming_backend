@@ -3,27 +3,14 @@ package services
 import (
 	"gypsyland_farming/app/models"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-func (srvc AccountRequestServiceImpl) GetAccountRequestData(requestID *primitive.ObjectID) (*models.AccountRequest, error) {
-
-	var accountRequest models.AccountRequest
-
-	if err := srvc.accountRequestCollection.FindOne(srvc.ctx, bson.D{bson.E{Key: "_id", Value: requestID}}).Decode(&accountRequest); err != nil {
-		return &accountRequest, err
-	}
-	return &accountRequest, nil
-}
 
 type ReadAccountRequestService interface {
 	GetAll() ([]*models.AccountRequestTask, error)
 
-	GetRequest(*primitive.ObjectID) (*models.AccountRequestTask, error)
+	GetRequestTask(*primitive.ObjectID) (*models.AccountRequestTask, error)
 	GetAccountRequestData(*primitive.ObjectID) (*models.AccountRequest, error)
-
-	GetRequests(*models.GetRequestBody, *[]models.AccountRequestTask, models.GetFunctions) error
 
 	GetFarmerPeindingRequests(*models.GetRequestBody, *[]models.FarmersPendingResponse, models.TeamAccess) error
 	GetFarmerInworkRequests(*models.GetRequestBody, *[]models.FarmersInworkResponse, models.TeamAccess) error
@@ -43,14 +30,15 @@ type ReadAccountRequestService interface {
 type WriteAccountRequestService interface {
 	CreateAccountRequest(*models.AccountRequestTask) error
 	UpdateRequest(*models.UpdateRequestBody) error
-	UpdateDownloadLink(string, string) error
 
 	TakeAccountRequest(*models.TakeAccountRequest) error
 	CancelAccountRequest(*models.CancelAccountRequest) error
 	CompleteAccountRequest(*models.CompleteAccountRequest) error
 	ReturnAccountRequest(*primitive.ObjectID) error
 
-	DeleteAccountRequest(*primitive.ObjectID) error
+	DeleteAccountRequests() (int, error)
+	DeleteAccountRequestTasks() (int, error)
+	RoundFloat(float64, uint) float64
 }
 
 type AccountTypesService interface {

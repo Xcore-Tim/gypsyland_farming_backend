@@ -97,14 +97,14 @@ func init() {
 
 	readAccountRequestService = services.NewReadAccountRequestService(accountRequestCollection, accountRequestTaskCollection, ctx)
 	writeAccountRequestService = services.NewWriteAccountRequestService(accountRequestCollection, accountRequestTaskCollection, ctx)
-	accountRequestController = controllers.NewAccountRequestTaskController(readAccountRequestService, writeAccountRequestService, teamService, teamAccessService, locationService, accountTypesService)
+	accountRequestController = controllers.NewAccountRequestTaskController(readAccountRequestService, writeAccountRequestService, teamService, teamAccessService, locationService, accountTypesService, fileService)
 
 	authService = services.NewAuthService(ctx)
 	jwtService = services.NewJWTService()
 	authController = controllers.NewAuthController(jwtService, authService, teamService)
 
-	fileService = services.NewFileService(ctx)
-	fileController = controllers.NewFileController(fileService, writeAccountRequestService)
+	fileService = services.NewFileService(accountRequestTaskCollection, ctx)
+	fileController = controllers.NewFileController(fileService)
 
 	server = gin.Default()
 

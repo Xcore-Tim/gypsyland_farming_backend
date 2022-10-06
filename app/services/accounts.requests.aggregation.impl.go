@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -43,81 +42,6 @@ func (srvc AccountRequestServiceImpl) GetAll() ([]*models.AccountRequestTask, er
 	}
 
 	return accountRequests, err
-}
-
-func (srvc AccountRequestServiceImpl) GetRequest(requestID *primitive.ObjectID) (*models.AccountRequestTask, error) {
-
-	var accountRequestTask models.AccountRequestTask
-
-	filter := bson.D{bson.E{Key: "_id", Value: requestID}}
-
-	if err := srvc.accountRequestTaskCollection.FindOne(srvc.ctx, filter).Decode(&accountRequestTask); err != nil {
-		return &accountRequestTask, err
-	}
-
-	return &accountRequestTask, nil
-}
-
-func (srvc AccountRequestServiceImpl) GetTLFARequests(requestBody *models.GetRequestBody, accountRequestTasks *[]models.AccountRequestTask) error {
-
-	filter := filters.TLFAdminRequest(requestBody)
-	cursor, err := srvc.accountRequestTaskCollection.Find(srvc.ctx, filter)
-
-	if err != nil {
-		return err
-	}
-
-	for cursor.Next(srvc.ctx) {
-		var accountRequest models.AccountRequestTask
-
-		if err := cursor.Decode(&accountRequest); err != nil {
-			return err
-		}
-		*accountRequestTasks = append(*accountRequestTasks, accountRequest)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return err
-	}
-
-	cursor.Close(srvc.ctx)
-
-	if len(*accountRequestTasks) == 0 {
-		return errors.New("documents not found")
-	}
-
-	return nil
-}
-
-func (srvc AccountRequestServiceImpl) GetRequests(requestBody *models.GetRequestBody, accountRequestTasks *[]models.AccountRequestTask, function models.GetFunctions) error {
-
-	filter := function(requestBody)
-	cursor, err := srvc.accountRequestTaskCollection.Find(srvc.ctx, filter)
-
-	if err != nil {
-		return err
-	}
-
-	for cursor.Next(srvc.ctx) {
-		var accountRequest models.AccountRequestTask
-
-		if err := cursor.Decode(&accountRequest); err != nil {
-			return err
-		}
-		*accountRequestTasks = append(*accountRequestTasks, accountRequest)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return err
-	}
-
-	cursor.Close(srvc.ctx)
-
-	if len(*accountRequestTasks) == 0 {
-		return errors.New("documents not found")
-	}
-
-	return nil
 }
 
 func (srvc AccountRequestServiceImpl) AggregateFarmersData(requestBody *models.GetRequestBody, groupedRepsonse *[]models.GroupedFarmersResponse) error {

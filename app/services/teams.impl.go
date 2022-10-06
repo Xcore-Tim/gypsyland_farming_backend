@@ -25,6 +25,10 @@ type user struct {
 	Teamid   int
 }
 
+type teamNumber struct {
+	Number int `json:"number"`
+}
+
 func NewTeamsService(teamCollection *mongo.Collection, ctx context.Context) TeamService {
 
 	return &TeamServiceImpl{
@@ -73,7 +77,7 @@ func (srvc TeamServiceImpl) GetAllTeams() (*[]models.Team, error) {
 	return &teamList, err
 }
 
-func (srvc TeamServiceImpl) GetDropdown(teamAccess *models.TeamAccess, editAccessRequest *models.EditTeamAccessRequest) (*[]models.TeamNumber, error) {
+func (srvc TeamServiceImpl) GetDropdown(teamAccess *models.TeamAccess, editAccessRequest *models.EditTeamAccessRequest) (*[]teamNumber, error) {
 
 	filter := filters.TeamDropdown(teamAccess)
 	projection := filters.TeamsProjection()
@@ -83,10 +87,10 @@ func (srvc TeamServiceImpl) GetDropdown(teamAccess *models.TeamAccess, editAcces
 		return nil, err
 	}
 
-	var teamList []models.TeamNumber
+	var teamList []teamNumber
 
 	for cursor.Next(srvc.ctx) {
-		var team models.TeamNumber
+		var team teamNumber
 		err := cursor.Decode(&team)
 
 		if err != nil {

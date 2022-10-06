@@ -8,8 +8,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (ctrl AccountRequestController) Test(ctx *gin.Context) {
@@ -171,12 +169,12 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 
 	accountRequestCompleted.Convert()
 
-	if accountRequest, err := ctrl.ReadAccountRequestService.GetRequest(&accountRequestCompleted.RequestID); err != nil {
+	if accountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestCompleted.RequestID); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	} else {
 		total := float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
-		accountRequestCompleted.TotalSum = ctrl.roundFloat(total, 2)
+		accountRequestCompleted.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
 	}
 
 	if err := ctrl.WriteAccountRequestService.CompleteAccountRequest(&accountRequestCompleted); err != nil {
@@ -189,29 +187,17 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 
 func (ctrl AccountRequestController) ReturnAccountRequest(ctx *gin.Context) {
 
-	requestID, _ := primitive.ObjectIDFromHex(ctx.Param("requestID"))
+	var requestData models.TakeAccountRequest
 
-	if err := ctrl.WriteAccountRequestService.ReturnAccountRequest(&requestID); err != nil {
+	if err := ctx.ShouldBindJSON(&requestData); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	requestData.Convert()
+
+	if err := ctrl.WriteAccountRequestService.ReturnAccountRequest(&requestData.RequestID); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
-}
-
-func (ctrl AccountRequestController) DeleteAccountRequest(ctx *gin.Context) {
-
-	request_id, err := primitive.ObjectIDFromHex(ctx.Param("request_id"))
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	err = ctrl.WriteAccountRequestService.DeleteAccountRequest(&request_id)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
