@@ -1,12 +1,12 @@
 package filters
 
 import (
-	"gypsyland_farming/app/models"
+	accounts "gypsylandFarming/app/models/accounts"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func BuyerRequestProjection(requestBody *models.GetRequestBody) bson.D {
+func BuyerRequestProjection(requestBody *accounts.GetRequestBody) bson.D {
 
 	var projection bson.D
 
@@ -61,7 +61,7 @@ func BuyerRequestProjection(requestBody *models.GetRequestBody) bson.D {
 	return projection
 }
 
-func FarmerRequestProjection(requestBody *models.GetRequestBody) bson.D {
+func FarmerRequestProjection(requestBody *accounts.GetRequestBody) bson.D {
 
 	var projection bson.D
 
@@ -134,6 +134,19 @@ func BuyerAggregationProjection() bson.D {
 func TeamsProjection() bson.D {
 	projection := bson.D{
 		bson.E{Key: "number", Value: 1},
+	}
+	return projection
+}
+
+func UCProjection() bson.D {
+	projection := bson.D{
+		bson.E{Key: "_id", Value: 1},
+		bson.E{Key: "accountRequest", Value: 1},
+		bson.E{Key: "buyer", Value: 1},
+		bson.E{Key: "team", Value: 1},
+		bson.E{Key: "price", Value: 1},
+		bson.E{Key: "totalSum", Value: 1},
+		bson.E{Key: "description", Value: 1},
 	}
 	return projection
 }

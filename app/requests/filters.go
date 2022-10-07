@@ -1,13 +1,14 @@
 package filters
 
 import (
-	"gypsyland_farming/app/models"
+	accounts "gypsylandFarming/app/models/accounts"
+	teams "gypsylandFarming/app/models/teams"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func BuyerRequestFilter(requestBody *models.GetRequestBody) bson.D {
+func BuyerRequestFilter(requestBody *accounts.GetRequestBody) bson.D {
 
 	filter := bson.D{
 		bson.E{Key: "$and", Value: bson.A{
@@ -23,7 +24,7 @@ func BuyerRequestFilter(requestBody *models.GetRequestBody) bson.D {
 	return filter
 }
 
-func FarmerRequestFilter(requestBody *models.GetRequestBody, teamAccess models.TeamAccess) bson.D {
+func FarmerRequestFilter(requestBody *accounts.GetRequestBody, teamAccess teams.TeamAccess) bson.D {
 
 	var filter primitive.D
 
@@ -58,7 +59,7 @@ func FarmerRequestFilter(requestBody *models.GetRequestBody, teamAccess models.T
 	return filter
 }
 
-func TeamleadRequestFilter(requestBody *models.GetRequestBody) bson.D {
+func TeamleadRequestFilter(requestBody *accounts.GetRequestBody) bson.D {
 
 	filter := bson.D{
 		bson.E{Key: "$and", Value: bson.A{
@@ -75,10 +76,10 @@ func TeamleadRequestFilter(requestBody *models.GetRequestBody) bson.D {
 	return filter
 }
 
-func AggregateFarmersData(requestBody *models.GetRequestBody) (bson.D, bson.D) {
+func AggregateFarmersData(requestBody *accounts.GetRequestBody) (bson.D, bson.D) {
 
 	matchStage := bson.D{bson.E{Key: "$match", Value: bson.D{
-		bson.E{Key: "status", Value: models.Complete},
+		bson.E{Key: "status", Value: accounts.Complete},
 		bson.E{Key: "$and", Value: bson.A{
 			bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
 			bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
@@ -102,10 +103,10 @@ func AggregateFarmersData(requestBody *models.GetRequestBody) (bson.D, bson.D) {
 	return matchStage, groupStage
 }
 
-func AggregateBuyersData(requestBody *models.GetRequestBody, teamleadID int) (bson.D, bson.D) {
+func AggregateBuyersData(requestBody *accounts.GetRequestBody, teamleadID int) (bson.D, bson.D) {
 
 	matchStage := bson.D{bson.E{Key: "$match", Value: bson.D{
-		bson.E{Key: "status", Value: models.Complete},
+		bson.E{Key: "status", Value: accounts.Complete},
 		bson.E{Key: "team.teamlead.id", Value: teamleadID},
 		bson.E{Key: "$and", Value: bson.A{
 			bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
@@ -133,10 +134,10 @@ func AggregateBuyersData(requestBody *models.GetRequestBody, teamleadID int) (bs
 	return matchStage, groupStage
 }
 
-func AggregateTeamsData(requestBody *models.GetRequestBody) (bson.D, bson.D) {
+func AggregateTeamsData(requestBody *accounts.GetRequestBody) (bson.D, bson.D) {
 
 	matchStage := bson.D{bson.E{Key: "$match", Value: bson.D{
-		bson.E{Key: "status", Value: models.Complete},
+		bson.E{Key: "status", Value: accounts.Complete},
 		bson.E{Key: "$and", Value: bson.A{
 			bson.M{"dateCreated": bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
 			bson.M{"dateCreated": bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
@@ -160,7 +161,7 @@ func AggregateTeamsData(requestBody *models.GetRequestBody) (bson.D, bson.D) {
 	return matchStage, groupStage
 }
 
-func TeamDropdown(teamAccess *models.TeamAccess) bson.D {
+func TeamDropdown(teamAccess *teams.TeamAccess) bson.D {
 
 	filter := bson.D{
 		bson.E{Key: "$and", Value: bson.A{

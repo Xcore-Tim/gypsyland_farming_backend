@@ -41,3 +41,8 @@ type Period struct {
 	StartDate time.Time `json:"unixStart"`
 	EndDate   time.Time `json:"unixEnd"`
 }
+
+type AccountType struct {
+	ID   primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name string             `json:"name" bson:"name"`
+}
