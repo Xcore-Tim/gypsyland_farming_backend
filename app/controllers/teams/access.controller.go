@@ -57,19 +57,7 @@ func (ctrl TeamAccessController) RevokeAccess(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
-func (ctrl TeamAccessController) GetAllAccesses(ctx *gin.Context) {
-
-	teamAccesses, err := ctrl.TeamAccessService.GetAllAccesses()
-
-	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, teamAccesses)
-}
-
-func (ctrl TeamAccessController) GetFarmersAccesses(ctx *gin.Context) {
+func (ctrl TeamAccessController) GetFarmerAccesses(ctx *gin.Context) {
 
 	var farmerAccessesRequest teams.EditTeamAccessRequest
 
@@ -92,15 +80,15 @@ func (ctrl TeamAccessController) GetFarmersAccesses(ctx *gin.Context) {
 
 func (ctrl TeamAccessController) GetAccesses(ctx *gin.Context) {
 
-	user_id_str := ctx.Param("user_id")
-	user_id, err := strconv.Atoi(string(user_id_str))
+	strUserID := ctx.Param("userID")
+	userID, err := strconv.Atoi(string(strUserID))
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	teamAccess, err := ctrl.TeamAccessService.GetAccess(user_id)
+	teamAccess, err := ctrl.TeamAccessService.GetAccess(userID)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
@@ -110,15 +98,31 @@ func (ctrl TeamAccessController) GetAccesses(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, teamAccess)
 }
 
+func (ctrl TeamAccessController) GetAll(ctx *gin.Context) {
+
+	teamAccesses, err := ctrl.TeamAccessService.GetAllAccesses()
+
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, teamAccesses)
+}
+
 func (ctrl TeamAccessController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	teamsGroup := rg.Group("/team")
 
 	accessGroup := teamsGroup.Group("/access")
-	accessGroup.POST("/getall", ctrl.GetAllAccesses)
-	accessGroup.POST("/farmers", ctrl.GetFarmersAccesses)
 
-	accessGroup.POST("/get/:user_id", ctrl.GetAccesses)
+	accessGroup.POST("/farmers", ctrl.GetFarmerAccesses)
+
 	accessGroup.POST("/add", ctrl.AddAccess)
 	accessGroup.POST("/revoke", ctrl.RevokeAccess)
+
+	getGroup := accessGroup.Group("/get")
+	getGroup.POST("/all", ctrl.GetAll)
+	getGroup.POST("/access", ctrl.GetAccesses)
+
 }

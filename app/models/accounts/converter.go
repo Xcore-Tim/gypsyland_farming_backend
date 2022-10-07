@@ -30,10 +30,9 @@ func (model *CreateAccountRequestBody) Convert() {
 
 	ConvertUserData(&model.UserData, model.UserIdentity)
 
-	locationID, err := primitive.ObjectIDFromHex(model.AccountRequestBody.LocationID)
-
-	if err != nil {
-		panic("error parsing locationID")
+	if model.AccountRequestBody.LocationID != "" {
+		locationID, _ := primitive.ObjectIDFromHex(model.AccountRequestBody.LocationID)
+		model.AccountRequestData.LocationID = locationID
 	}
 
 	typeID, err := primitive.ObjectIDFromHex(model.AccountRequestBody.TypeID)
@@ -42,7 +41,6 @@ func (model *CreateAccountRequestBody) Convert() {
 		panic("error parsing locationID")
 	}
 
-	model.AccountRequestData.LocationID = locationID
 	model.AccountRequestData.TypeID = typeID
 	model.AccountRequestData.Quantity, err = strconv.Atoi(model.AccountRequestBody.Quantity)
 

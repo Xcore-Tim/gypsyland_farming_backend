@@ -47,6 +47,8 @@ func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	accountRequestGroup := rg.Group("/accountRequests")
 
+	accountRequestGroup.POST("/create", ctrl.CreateAccountRequest)
+
 	getGroup := accountRequestGroup.Group("/get")
 	getGroup.GET("/request", ctrl.GetAccountRequestData)
 	getGroup.POST("/all", ctrl.GetAll)
@@ -60,8 +62,6 @@ func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	aggregatedGroup.POST("/farmers", ctrl.AggregateFarmersData)
 	aggregatedGroup.POST("/teams", ctrl.AggregateTeamsData)
 	aggregatedGroup.POST("/buyers", ctrl.AggregateBuyersData)
-
-	accountRequestGroup.POST("/create", ctrl.CreateAccountRequest)
 
 	updateGroup := accountRequestGroup.Group("/update")
 	updateGroup.POST("/request", ctrl.UpdateRequest)
