@@ -29,11 +29,13 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
 	var accountRequestTask accounts.AccountRequestTask
 
-	location, err := ctrl.LocationService.GetLocation(requestBody.AccountRequestData.LocationID)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if requestBody.AccountRequestBody.LocationID != "" {
+		location, err := ctrl.LocationService.GetLocation(requestBody.AccountRequestData.LocationID)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			// return
+		}
+		accountRequestTask.AccountRequest.Location = *location
 	}
 
 	accountType, err := ctrl.AccountTypesService.GetType(requestBody.AccountRequestData.TypeID)
@@ -50,7 +52,6 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 		return
 	}
 
-	accountRequestTask.AccountRequest.Location = *location
 	accountRequestTask.AccountRequest.Type = *accountType
 	accountRequestTask.AccountRequest.Quantity = requestBody.AccountRequestData.Quantity
 
@@ -191,10 +192,13 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 
 	accountRequestCompleted.Convert()
 
-	if accountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestCompleted.RequestID); err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
-		return
-	} else {
+	accountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestCompleted.RequestID)
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+	}
+
+	if accountRequest.Price != accountRequestCompleted.OrderInfo.Price {
 		total := float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
 		accountRequestCompleted.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
 	}
