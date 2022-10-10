@@ -12,7 +12,7 @@ type LocationService interface {
 	GetLocationByName(string) (*models.Location, error)
 	GetAll() ([]*models.Location, error)
 
-	UpdateLocation(*models.Location) error
+	UpdateLocation(*primitive.ObjectID, *models.Location) error
 
 	DeleteLocation(*string) error
 	DeleteAll() (int, error)
