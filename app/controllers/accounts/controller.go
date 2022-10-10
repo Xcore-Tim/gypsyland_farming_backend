@@ -74,6 +74,7 @@ func (ctrl AccountRequestController) RegisterUserRoutes(rg *gin.RouterGroup) {
 
 	deleteGroup := accountRequestGroup.Group("/delete")
 	deleteGroup.POST("/all", ctrl.DeleteAllAccountRequests)
+	deleteGroup.POST("/request", ctrl.DeleteAccountRequest)
 
 	accountRequestGroup.POST("/test", ctrl.Test)
 }

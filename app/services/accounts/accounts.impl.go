@@ -68,7 +68,18 @@ func (srvc AccountRequestServiceImpl) GetRequestTask(requestID *primitive.Object
 	return &accountRequestTask, nil
 }
 
-func (srvc AccountRequestServiceImpl) DeleteAccountRequestTasks() (int, error) {
+func (srvc AccountRequestServiceImpl) DeleteAccountRequest(oid primitive.ObjectID) error {
+
+	filter := bson.D{bson.E{Key: "_id", Value: oid}}
+
+	if _, err := srvc.accountRequestTaskCollection.DeleteOne(srvc.ctx, filter); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (srvc AccountRequestServiceImpl) DeleteAll() (int, error) {
 
 	filter := bson.D{bson.E{}}
 

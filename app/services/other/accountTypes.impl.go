@@ -19,6 +19,7 @@ func NewAccountTypesService(accountTypesCollection *mongo.Collection, ctx contex
 
 	return &AccountTypesServiceImpl{
 		accountTypesCollection: accountTypesCollection,
+		ctx:                    ctx,
 	}
 }
 

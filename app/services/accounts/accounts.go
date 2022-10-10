@@ -37,6 +37,7 @@ type WriteAccountRequestService interface {
 	CompleteAccountRequest(*accounts.CompleteAccountRequest) error
 	ReturnAccountRequest(*primitive.ObjectID) error
 
-	DeleteAccountRequestTasks() (int, error)
+	DeleteAccountRequest(primitive.ObjectID) error
+	DeleteAll() (int, error)
 	RoundFloat(float64, uint) float64
 }

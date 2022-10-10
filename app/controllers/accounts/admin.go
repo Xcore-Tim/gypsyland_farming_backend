@@ -5,11 +5,28 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func (ctrl AccountRequestController) DeleteAccountRequest(ctx *gin.Context) {
+	oid, err := primitive.ObjectIDFromHex(ctx.Query("oid"))
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := ctrl.WriteAccountRequestService.DeleteAccountRequest(oid); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
 
 func (ctrl AccountRequestController) DeleteAllAccountRequests(ctx *gin.Context) {
 
-	requestCount, err := ctrl.WriteAccountRequestService.DeleteAccountRequestTasks()
+	requestCount, err := ctrl.WriteAccountRequestService.DeleteAll()
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
