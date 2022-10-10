@@ -22,6 +22,7 @@ func NewLocationController(locationService services.LocationService) LocationCon
 func (ctrl *LocationController) CreateLocation(ctx *gin.Context) {
 
 	var location models.Location
+
 	if err := ctx.ShouldBindJSON(&location); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -65,6 +66,13 @@ func (ctrl LocationController) GetAll(ctx *gin.Context) {
 
 func (ctrl LocationController) UpdateLocation(ctx *gin.Context) {
 
+	oid, err := primitive.ObjectIDFromHex(ctx.Query("oid"))
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	var location models.Location
 
 	if err := ctx.ShouldBindJSON(&location); err != nil {
@@ -72,9 +80,7 @@ func (ctrl LocationController) UpdateLocation(ctx *gin.Context) {
 		return
 	}
 
-	err := ctrl.LocationService.UpdateLocation(&location)
-
-	if err != nil {
+	if err = ctrl.LocationService.UpdateLocation(&oid, &location); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}
