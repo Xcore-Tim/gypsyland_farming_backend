@@ -3,14 +3,16 @@ package models
 import (
 	global "gypsylandFarming/app/models"
 	auth "gypsylandFarming/app/models/authentication"
+	models "gypsylandFarming/app/models/currency"
 	teams "gypsylandFarming/app/models/teams"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AccountRequestBody struct {
-	TypeID      string `json:"typeId"`
-	LocationID  string `json:"locationId"`
+	TypeID      string `json:"typeID"`
+	LocationID  string `json:"locationID"`
+	Currency    string `json:"currencyID"`
 	Quantity    string `json:"quantity"`
 	Price       string `json:"price"`
 	Description string `json:"description"`
@@ -40,14 +42,15 @@ type CreateAccountRequestBody struct {
 }
 
 type CloseOrderInfo struct {
+	OrderID     string  `json:"orderID"`
 	Valid       int     `json:"valid"`
 	Price       float64 `json:"price"`
+	CurrencyID  string  `json:"currencyID"`
 	Description string  `json:"description"`
 	Link        string  `json:"downloadLink"`
 }
 
 type CompleteAccountRequest struct {
-	OrderID      string            `json:"orderID"`
 	UserIdentity auth.UserIdentity `json:"userIdentity"`
 	OrderInfo    CloseOrderInfo    `json:"closeOrderInfo"`
 	TotalSum     float64
@@ -74,6 +77,8 @@ type UCResponseBody struct {
 	ID             primitive.ObjectID
 	AccountRequest AccountRequest  `json:"accountRequest" bson:"accountRequest"`
 	Buyer          global.Employee `json:"buyer"`
+	Currency       models.Currency `json:"currency"`
+	BaseCurrency   models.Currency `json:"baseCurrency"`
 	Team           teams.Team      `json:"team"`
 	Valid          int             `json:"valid"`
 	Price          float64         `json:"price"`
@@ -85,6 +90,7 @@ type UpdateRequestData struct {
 	AccountType string  `json:"accountType"`
 	Location    string  `json:"location"`
 	Description string  `json:"description"`
+	Currency    string  `json:"currencyID"`
 	Quantity    int     `json:"quantity"`
 	Price       float64 `json:"price"`
 }

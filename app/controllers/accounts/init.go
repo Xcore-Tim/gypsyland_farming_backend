@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	accountTypesService "gypsylandFarming/app/services/accountTypes"
 	accountService "gypsylandFarming/app/services/accounts"
+	currencyServices "gypsylandFarming/app/services/currency"
 	fileService "gypsylandFarming/app/services/files"
-	services "gypsylandFarming/app/services/other"
+	services "gypsylandFarming/app/services/locations"
 	teamService "gypsylandFarming/app/services/teams"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +14,13 @@ import (
 type AccountRequestController struct {
 	ReadAccountRequestService  accountService.ReadAccountRequestService
 	WriteAccountRequestService accountService.WriteAccountRequestService
-	AccountTypesService        services.AccountTypesService
+	AccountTypesService        accountTypesService.AccountTypesService
 	TeamAccessService          teamService.TeamAccessService
 	TeamService                teamService.TeamService
 	LocationService            services.LocationService
 	FileService                fileService.FileService
+	CurrencyService            currencyServices.CurrencyService
+	CurrencyRatesService       currencyServices.CurrencyRatesService
 }
 
 type UserDataConverter interface {
@@ -29,8 +33,11 @@ func NewAccountRequestTaskController(
 	teamService teamService.TeamService,
 	teamAccessService teamService.TeamAccessService,
 	locationService services.LocationService,
-	accountTypesService services.AccountTypesService,
+	accountTypesService accountTypesService.AccountTypesService,
 	fileService fileService.FileService,
+	currencyService currencyServices.CurrencyService,
+	currencyRatesService currencyServices.CurrencyRatesService,
+
 ) AccountRequestController {
 	return AccountRequestController{
 		ReadAccountRequestService:  readAccountRequestService,
@@ -40,6 +47,8 @@ func NewAccountRequestTaskController(
 		LocationService:            locationService,
 		AccountTypesService:        accountTypesService,
 		FileService:                fileService,
+		CurrencyService:            currencyService,
+		CurrencyRatesService:       currencyRatesService,
 	}
 }
 

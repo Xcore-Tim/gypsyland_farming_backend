@@ -4,17 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	accountTypesControllers "gypsylandFarming/app/controllers/accountTypes"
 	accountControllers "gypsylandFarming/app/controllers/accounts"
 	authControllers "gypsylandFarming/app/controllers/auth"
+	currencyControllers "gypsylandFarming/app/controllers/currency"
 	fileControllers "gypsylandFarming/app/controllers/files"
-	otherControllers "gypsylandFarming/app/controllers/other"
+	locationsControllers "gypsylandFarming/app/controllers/locations"
 	teamControllers "gypsylandFarming/app/controllers/teams"
 
-	accountService "gypsylandFarming/app/services/accounts"
-	authenticationService "gypsylandFarming/app/services/auth"
-	filesService "gypsylandFarming/app/services/files"
-	otherServices "gypsylandFarming/app/services/other"
-	teamsService "gypsylandFarming/app/services/teams"
+	accountTypesServices "gypsylandFarming/app/services/accountTypes"
+	accountServices "gypsylandFarming/app/services/accounts"
+	authenticationServices "gypsylandFarming/app/services/auth"
+	currencyServices "gypsylandFarming/app/services/currency"
+	filesServices "gypsylandFarming/app/services/files"
+	locationsServices "gypsylandFarming/app/services/locations"
+	teamsServices "gypsylandFarming/app/services/teams"
 
 	"log"
 
@@ -31,33 +35,38 @@ var (
 	ctx         context.Context
 	mongoClient *mongo.Client
 
-	locationService    otherServices.LocationService
-	locationController otherControllers.LocationController
+	locationService    locationsServices.LocationService
+	locationController locationsControllers.LocationController
 	locationCollection *mongo.Collection
 
-	teamService    teamsService.TeamService
+	teamService    teamsServices.TeamService
 	teamController teamControllers.TeamController
 	teamCollection *mongo.Collection
 
-	teamAccessService    teamsService.TeamAccessService
+	teamAccessService    teamsServices.TeamAccessService
 	teamAccessController teamControllers.TeamAccessController
 	teamAccessCollection *mongo.Collection
 
-	readAccountRequestService    accountService.ReadAccountRequestService
-	writeAccountRequestService   accountService.WriteAccountRequestService
+	readAccountRequestService    accountServices.ReadAccountRequestService
+	writeAccountRequestService   accountServices.WriteAccountRequestService
 	accountRequestController     accountControllers.AccountRequestController
 	accountRequestTaskCollection *mongo.Collection
 
-	accountTypesService   otherServices.AccountTypesService
-	accountTypeController otherControllers.AccountTypesController
+	accountTypesService   accountTypesServices.AccountTypesService
+	accountTypeController accountTypesControllers.AccountTypesController
 	accountTypeCollection *mongo.Collection
 
-	authService    authenticationService.AuthService
-	jwtService     authenticationService.JWTService
+	authService    authenticationServices.AuthService
+	jwtService     authenticationServices.JWTService
 	authController authControllers.AuthController
 
-	fileService    filesService.FileService
+	fileService    filesServices.FileService
 	fileController fileControllers.FileController
+
+	currencyService      currencyServices.CurrencyService
+	currencyRatesService currencyServices.CurrencyRatesService
+	currencyController   currencyControllers.CurrencyController
+	currencyCollection   *mongo.Collection
 )
 
 func init() {
@@ -80,32 +89,47 @@ func init() {
 	fmt.Println("mongo connection has been established")
 
 	locationCollection = mongoClient.Database("gypsyland").Collection("locations")
-	locationService = otherServices.NewLocationService(locationCollection, ctx)
-	locationController = otherControllers.NewLocationController(locationService)
+	locationService = locationsServices.NewLocationService(locationCollection, ctx)
+	locationController = locationsControllers.NewLocationController(locationService)
 
 	teamAccessCollection = mongoClient.Database("gypsyland").Collection("teamAccess")
-	teamAccessService = teamsService.NewTeamAccessService(teamAccessCollection, ctx)
+	teamAccessService = teamsServices.NewTeamAccessService(teamAccessCollection, ctx)
 	teamAccessController = teamControllers.NewTeamAccessController(teamAccessService)
 
 	teamCollection = mongoClient.Database("gypsyland").Collection("teams")
-	teamService = teamsService.NewTeamsService(teamCollection, ctx)
+	teamService = teamsServices.NewTeamsService(teamCollection, ctx)
 	teamController = teamControllers.NewTeamController(teamService, teamAccessService)
 
 	accountRequestTaskCollection = mongoClient.Database("gypsyland").Collection("accountRequestTasks")
 
 	accountTypeCollection = mongoClient.Database("gypsyland").Collection("accountTypes")
-	accountTypesService = otherServices.NewAccountTypesService(accountTypeCollection, ctx)
-	accountTypeController = otherControllers.NewAccountTypesController(accountTypesService)
+	accountTypesService = accountTypesServices.NewAccountTypesService(accountTypeCollection, ctx)
+	accountTypeController = accountTypesControllers.NewAccountTypesController(accountTypesService)
 
-	readAccountRequestService = accountService.NewReadAccountRequestService(accountRequestTaskCollection, ctx)
-	writeAccountRequestService = accountService.NewWriteAccountRequestService(accountRequestTaskCollection, ctx)
-	accountRequestController = accountControllers.NewAccountRequestTaskController(readAccountRequestService, writeAccountRequestService, teamService, teamAccessService, locationService, accountTypesService, fileService)
+	currencyCollection = mongoClient.Database("gypsyland").Collection("currency")
+	currencyService = currencyServices.NewCurrencyService(currencyCollection, ctx)
+	currencyRatesService = currencyServices.NewCurrencyRatesService(currencyCollection, ctx)
+	currencyController = currencyControllers.NewCurrencyController(currencyService, currencyRatesService)
 
-	authService = authenticationService.NewAuthService(ctx)
-	jwtService = authenticationService.NewJWTService()
+	readAccountRequestService = accountServices.NewReadAccountRequestService(accountRequestTaskCollection, ctx)
+	writeAccountRequestService = accountServices.NewWriteAccountRequestService(accountRequestTaskCollection, ctx)
+	accountRequestController = accountControllers.NewAccountRequestTaskController(
+		readAccountRequestService,
+		writeAccountRequestService,
+		teamService,
+		teamAccessService,
+		locationService,
+		accountTypesService,
+		fileService,
+		currencyService,
+		currencyRatesService,
+	)
+
+	authService = authenticationServices.NewAuthService(ctx)
+	jwtService = authenticationServices.NewJWTService()
 	authController = authControllers.NewAuthController(jwtService, authService, teamService)
 
-	fileService = filesService.NewFileService(accountRequestTaskCollection, ctx)
+	fileService = filesServices.NewFileService(accountRequestTaskCollection, ctx)
 	fileController = fileControllers.NewFileController(fileService)
 
 	server = gin.Default()
@@ -139,6 +163,7 @@ func main() {
 	teamController.RegisterUserRoutes(basepath)
 	teamAccessController.RegisterUserRoutes(basepath)
 	fileController.RegisterUserRoutes(basepath)
+	currencyController.RegisterUserRoutes(basepath)
 
 	log.Fatal(server.Run(":9090"))
 

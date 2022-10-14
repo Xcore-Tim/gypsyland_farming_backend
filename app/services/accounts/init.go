@@ -30,11 +30,11 @@ type ReadAccountRequestService interface {
 
 type WriteAccountRequestService interface {
 	CreateAccountRequest(*accounts.AccountRequestTask) error
-	UpdateRequest(*accounts.UCResponseBody) error
+	UpdateRequest(*accounts.AccountRequestTask) error
 
 	TakeAccountRequest(*accounts.TakeAccountRequest) error
 	CancelAccountRequest(*accounts.CancelAccountRequest) error
-	CompleteAccountRequest(*accounts.CompleteAccountRequest) error
+	CompleteAccountRequest(*accounts.AccountRequestTask) error
 	ReturnAccountRequest(*primitive.ObjectID) error
 
 	DeleteAccountRequest(primitive.ObjectID) error

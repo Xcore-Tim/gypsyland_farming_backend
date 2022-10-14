@@ -87,10 +87,13 @@ func (srvc LocationServiceImpl) GetAll() ([]*models.Location, error) {
 	return locations, err
 }
 
-func (srvc LocationServiceImpl) UpdateLocation(oid *primitive.ObjectID, location *models.Location) error {
+func (srvc LocationServiceImpl) UpdateLocation(location *models.Location) error {
 
-	filter := bson.D{bson.E{Key: "_id", Value: oid}}
-	update := bson.D{bson.E{Key: "$set", Value: bson.D{bson.E{Key: "name", Value: location.Name}, bson.E{Key: "iso", Value: location.ISO}}}}
+	filter := bson.D{bson.E{Key: "_id", Value: location.ID}}
+	update := bson.D{bson.E{Key: "$set", Value: bson.D{
+		bson.E{Key: "name", Value: location.Name},
+		bson.E{Key: "iso", Value: location.ISO},
+	}}}
 
 	result, _ := srvc.locationCollection.UpdateOne(srvc.ctx, filter, update)
 

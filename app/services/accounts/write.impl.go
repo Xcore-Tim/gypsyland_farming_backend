@@ -23,13 +23,15 @@ func (srvc AccountRequestServiceImpl) CreateAccountRequest(accountRequestTask *a
 	return err
 }
 
-func (srvc AccountRequestServiceImpl) UpdateRequest(requestUpdate *accounts.UCResponseBody) error {
+func (srvc AccountRequestServiceImpl) UpdateRequest(requestUpdate *accounts.AccountRequestTask) error {
 
 	filter := bson.D{bson.E{Key: "_id", Value: requestUpdate.ID}}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
 		bson.E{Key: "accountRequest", Value: requestUpdate.AccountRequest},
 		bson.E{Key: "price", Value: requestUpdate.Price},
-		bson.E{Key: "totalSum", Value: requestUpdate.Total},
+		bson.E{Key: "totalSum", Value: requestUpdate.TotalSum},
+		bson.E{Key: "currency", Value: requestUpdate.Currency},
+		bson.E{Key: "baseCurrency", Value: requestUpdate.BaseCurrency},
 		bson.E{Key: "description", Value: requestUpdate.Description},
 		bson.E{Key: "dateUpdated", Value: time.Now().Unix()},
 	}}}
@@ -79,16 +81,18 @@ func (srvc AccountRequestServiceImpl) CancelAccountRequest(cancelRequest *accoun
 	return nil
 }
 
-func (srvc AccountRequestServiceImpl) CompleteAccountRequest(accountRequestCompleted *accounts.CompleteAccountRequest) error {
+func (srvc AccountRequestServiceImpl) CompleteAccountRequest(accountRequestCompleted *accounts.AccountRequestTask) error {
 
-	filter := bson.D{bson.E{Key: "_id", Value: accountRequestCompleted.RequestID}}
+	filter := bson.D{bson.E{Key: "_id", Value: accountRequestCompleted.ID}}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
 		bson.E{Key: "status", Value: accounts.Complete},
-		bson.E{Key: "valid", Value: accountRequestCompleted.OrderInfo.Valid},
-		bson.E{Key: "price", Value: accountRequestCompleted.OrderInfo.Price},
-		bson.E{Key: "description", Value: accountRequestCompleted.OrderInfo.Description},
+		bson.E{Key: "currency", Value: accountRequestCompleted.Currency},
+		bson.E{Key: "baseCurrency", Value: accountRequestCompleted.BaseCurrency},
+		bson.E{Key: "valid", Value: accountRequestCompleted.Valid},
+		bson.E{Key: "price", Value: accountRequestCompleted.Price},
+		bson.E{Key: "description", Value: accountRequestCompleted.Description},
 		bson.E{Key: "totalSum", Value: accountRequestCompleted.TotalSum},
-		bson.E{Key: "downloadLink", Value: accountRequestCompleted.OrderInfo.Link},
+		bson.E{Key: "downloadLink", Value: accountRequestCompleted.DownloadLink},
 		bson.E{Key: "dateFinished", Value: time.Now().Unix()},
 	}}}
 

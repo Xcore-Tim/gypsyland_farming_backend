@@ -3,6 +3,7 @@ package models
 import (
 	global "gypsylandFarming/app/models"
 	auth "gypsylandFarming/app/models/authentication"
+	currency "gypsylandFarming/app/models/currency"
 	teams "gypsylandFarming/app/models/teams"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -41,7 +42,8 @@ type AccountRequestTask struct {
 	Valid          int                `json:"valid" bson:"valid"`
 	Price          float64            `json:"price" bson:"price"`
 	TotalSum       float64            `json:"totalSum" bson:"totalSum"`
-	Currency       global.Currency    `json:"currency" bson:"currency"`
+	Currency       currency.Currency  `json:"currency" bson:"currency"`
+	BaseCurrency   currency.Currency  `json:"baseCurrency" bson:"baseCurrency"`
 	CancelledBy    global.Employee    `json:"cancelledBy" bson:"cancelledBy"`
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`

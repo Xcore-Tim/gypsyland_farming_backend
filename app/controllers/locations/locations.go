@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"gypsylandFarming/app/models"
-	services "gypsylandFarming/app/services/other"
+	services "gypsylandFarming/app/services/locations"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -80,7 +80,9 @@ func (ctrl LocationController) UpdateLocation(ctx *gin.Context) {
 		return
 	}
 
-	if err = ctrl.LocationService.UpdateLocation(&oid, &location); err != nil {
+	location.ID = oid
+
+	if err = ctrl.LocationService.UpdateLocation(&location); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}

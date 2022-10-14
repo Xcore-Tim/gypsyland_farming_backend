@@ -11,12 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func (ctrl AccountRequestController) Test(ctx *gin.Context) {
-
-	oid := ctx.Query("oid")
-	ctx.JSON(http.StatusOK, oid)
-}
-
 func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
 	var requestBody accounts.CreateAccountRequestBody
@@ -33,7 +27,6 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 		location, err := ctrl.LocationService.GetLocation(requestBody.AccountRequestData.LocationID)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			// return
 		}
 		accountRequestTask.AccountRequest.Location = *location
 	}
@@ -66,6 +59,11 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 	accountRequestTask.Buyer.Name = requestBody.UserData.Username
 	accountRequestTask.Buyer.Position = requestBody.UserData.RoleID
 
+	if currencyID, err := primitive.ObjectIDFromHex(requestBody.AccountRequestBody.Currency); err == nil {
+		requestDate := time.Now().Format("02-01-2006")
+		ctrl.SetRequestCurrency(currencyID, requestDate, &accountRequestTask)
+	}
+
 	if err := ctrl.WriteAccountRequestService.CreateAccountRequest(&accountRequestTask); err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
@@ -93,45 +91,58 @@ func (ctrl AccountRequestController) UpdateRequest(ctx *gin.Context) {
 	accountRequestUpdate.RequestID = orderID
 	accountRequestUpdate.Convert()
 
-	originalAccountRequest, err := ctrl.ReadAccountRequestService.GetAccountRequestData(&accountRequestUpdate.RequestID)
+	originalAccountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestUpdate.RequestID)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	var updateResponse accounts.UCResponseBody
-
-	updateResponse.ID = originalAccountRequest.ID
-	updateResponse.AccountRequest = originalAccountRequest.AccountRequest
-	updateResponse.Description = accountRequestUpdate.UpdateBody.Description
-
 	if accountRequestUpdate.UpdateBody.Location != "" {
 		if location, err := ctrl.LocationService.GetLocationByName(accountRequestUpdate.UpdateBody.Location); err == nil {
-			updateResponse.AccountRequest.Location = *location
+			originalAccountRequest.AccountRequest.Location = *location
 		}
 	}
 
 	if accountRequestUpdate.UpdateBody.AccountType != "" {
 		if accountType, err := ctrl.AccountTypesService.GetTypeByName(accountRequestUpdate.UpdateBody.AccountType); err == nil {
-			updateResponse.AccountRequest.Type = *accountType
+			originalAccountRequest.AccountRequest.Type = *accountType
 		}
 	}
 
 	if accountRequestUpdate.UpdateBody.Quantity != originalAccountRequest.AccountRequest.Quantity {
-		updateResponse.AccountRequest.Quantity = accountRequestUpdate.UpdateBody.Quantity
+		originalAccountRequest.AccountRequest.Quantity = accountRequestUpdate.UpdateBody.Quantity
 	}
 
 	if accountRequestUpdate.UpdateBody.Price != originalAccountRequest.Price {
-		updateResponse.Price = accountRequestUpdate.UpdateBody.Price
+		originalAccountRequest.Price = accountRequestUpdate.UpdateBody.Price
 	}
 
-	total := float64(updateResponse.AccountRequest.Quantity) * updateResponse.Price
-	updateResponse.Total = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
+	total := float64(originalAccountRequest.AccountRequest.Quantity) * originalAccountRequest.Price
+	originalAccountRequest.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
 
-	ctx.JSON(http.StatusOK, updateResponse)
+	if accountRequestUpdate.UpdateBody.Currency != "" {
 
-	if err := ctrl.WriteAccountRequestService.UpdateRequest(&updateResponse); err != nil {
+		if currencyID, err := primitive.ObjectIDFromHex(accountRequestUpdate.UpdateBody.Currency); err == nil {
+			updateCurrency, err := ctrl.CurrencyService.GetCurrency(currencyID)
+
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			if updateCurrency.ID != originalAccountRequest.Currency.ID {
+				requestDate := time.Unix(originalAccountRequest.DateCreated, 0).Format("02-01-2006")
+				ctrl.SetRequestCurrency(currencyID, requestDate, originalAccountRequest)
+			}
+		} else {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+	}
+
+	if err := ctrl.WriteAccountRequestService.UpdateRequest(originalAccountRequest); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -200,10 +211,36 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 
 	if accountRequest.Price != accountRequestCompleted.OrderInfo.Price {
 		total := float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
-		accountRequestCompleted.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
+		accountRequest.Price = accountRequestCompleted.OrderInfo.Price
+		accountRequest.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
 	}
 
-	if err := ctrl.WriteAccountRequestService.CompleteAccountRequest(&accountRequestCompleted); err != nil {
+	accountRequest.Valid = accountRequestCompleted.OrderInfo.Valid
+	accountRequest.Description = accountRequestCompleted.OrderInfo.Description
+	accountRequest.DownloadLink = accountRequestCompleted.OrderInfo.Link
+
+	if accountRequestCompleted.OrderInfo.CurrencyID != "" {
+
+		if currencyID, err := primitive.ObjectIDFromHex(accountRequestCompleted.OrderInfo.CurrencyID); err == nil {
+			updateCurrency, err := ctrl.CurrencyService.GetCurrency(currencyID)
+
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			if updateCurrency.ID != accountRequest.Currency.ID {
+				requestDate := time.Unix(accountRequest.DateCreated, 0).Format("02-01-2006")
+				ctrl.SetRequestCurrency(currencyID, requestDate, accountRequest)
+			}
+		} else {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+	}
+
+	if err := ctrl.WriteAccountRequestService.CompleteAccountRequest(accountRequest); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -228,4 +265,115 @@ func (ctrl AccountRequestController) ReturnAccountRequest(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
+func (ctrl AccountRequestController) SetRequestCurrency(currencyID primitive.ObjectID, requestDate string, accountRequestTask *accounts.AccountRequestTask) error {
+
+	currency, err := ctrl.CurrencyService.GetCurrency(currencyID)
+
+	if err != nil {
+		return err
+	}
+
+	currencyRates, err := ctrl.CurrencyRatesService.GetCurrencyRates(requestDate)
+
+	if err != nil {
+		return err
+	}
+
+	currency.Value = currencyRates[currency.ISO]
+
+	if currency.Value == 0 {
+		currency.Value = 1
+	}
+
+	accountRequestTask.Currency = *currency
+
+	switch accountRequestTask.Currency.ISO {
+	case "USD":
+		accountRequestTask.BaseCurrency = accountRequestTask.Currency
+		accountRequestTask.BaseCurrency.Value = 1
+	default:
+		baseCurrency, _ := ctrl.CurrencyService.GetBaseCurrency()
+		baseCurrency.Value = currencyRates[baseCurrency.ISO]
+		accountRequestTask.BaseCurrency = *baseCurrency
+	}
+
+	return nil
+
+}
+
+func (ctrl AccountRequestController) Test(ctx *gin.Context) {
+	orderID, err := primitive.ObjectIDFromHex(ctx.Query("orderID"))
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var accountRequestUpdate accounts.UpdateRequestBody
+
+	if err := ctx.ShouldBindJSON(&accountRequestUpdate); err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	accountRequestUpdate.RequestID = orderID
+	accountRequestUpdate.Convert()
+
+	originalAccountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestUpdate.RequestID)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if accountRequestUpdate.UpdateBody.Location != "" {
+		if location, err := ctrl.LocationService.GetLocationByName(accountRequestUpdate.UpdateBody.Location); err == nil {
+			originalAccountRequest.AccountRequest.Location = *location
+		}
+	}
+
+	if accountRequestUpdate.UpdateBody.AccountType != "" {
+		if accountType, err := ctrl.AccountTypesService.GetTypeByName(accountRequestUpdate.UpdateBody.AccountType); err == nil {
+			originalAccountRequest.AccountRequest.Type = *accountType
+		}
+	}
+
+	if accountRequestUpdate.UpdateBody.Quantity != originalAccountRequest.AccountRequest.Quantity {
+		originalAccountRequest.AccountRequest.Quantity = accountRequestUpdate.UpdateBody.Quantity
+	}
+
+	if accountRequestUpdate.UpdateBody.Price != originalAccountRequest.Price {
+		originalAccountRequest.Price = accountRequestUpdate.UpdateBody.Price
+	}
+
+	total := float64(originalAccountRequest.AccountRequest.Quantity) * originalAccountRequest.Price
+	originalAccountRequest.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
+
+	if accountRequestUpdate.UpdateBody.Currency != "" {
+		currencyID, err := primitive.ObjectIDFromHex(accountRequestUpdate.UpdateBody.Currency)
+
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		updateCurrency, err := ctrl.CurrencyService.GetCurrency(currencyID)
+
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if updateCurrency.ID != originalAccountRequest.Currency.ID {
+			requestDate := time.Unix(originalAccountRequest.DateCreated, 0).Format("02-01-2006")
+			ctrl.SetRequestCurrency(currencyID, requestDate, originalAccountRequest)
+		}
+
+		ctx.JSON(http.StatusOK, originalAccountRequest)
+
+	}
+
+	// ctx.JSON(http.StatusOK, originalAccountRequest)
 }

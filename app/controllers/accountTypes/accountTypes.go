@@ -5,7 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"gypsylandFarming/app/models"
-	services "gypsylandFarming/app/services/other"
+	services "gypsylandFarming/app/services/accountTypes"
 	"net/http"
 )
 

@@ -42,7 +42,8 @@ func (model *CreateAccountRequestBody) Convert() {
 	}
 
 	model.AccountRequestData.TypeID = typeID
-	model.AccountRequestData.Quantity, err = strconv.Atoi(model.AccountRequestBody.Quantity)
+	model.AccountRequestData.Quantity, _ = strconv.Atoi(model.AccountRequestBody.Quantity)
+	model.AccountRequestData.Price, _ = strconv.ParseFloat(model.AccountRequestBody.Price, 64)
 
 	if err != nil {
 		model.AccountRequestData.Quantity = 0
@@ -67,7 +68,7 @@ func (model *TakeAccountRequest) Convert() {
 
 func (model *CompleteAccountRequest) Convert() {
 	ConvertUserData(&model.UserData, model.UserIdentity)
-	model.RequestID, _ = primitive.ObjectIDFromHex(model.OrderID)
+	model.RequestID, _ = primitive.ObjectIDFromHex(model.OrderInfo.OrderID)
 }
 
 func ConvertUserData(userData *auth.UserData, userIdentity auth.UserIdentity) {
