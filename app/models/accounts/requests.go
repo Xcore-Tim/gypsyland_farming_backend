@@ -42,6 +42,7 @@ type AccountRequestTask struct {
 	Valid          int                `json:"valid" bson:"valid"`
 	Price          float64            `json:"price" bson:"price"`
 	TotalSum       float64            `json:"totalSum" bson:"totalSum"`
+	BaseTotal      float64            `json:"baseTotal" bson:"baseTotal"`
 	Currency       currency.Currency  `json:"currency" bson:"currency"`
 	BaseCurrency   currency.Currency  `json:"baseCurrency" bson:"baseCurrency"`
 	CancelledBy    global.Employee    `json:"cancelledBy" bson:"cancelledBy"`

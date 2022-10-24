@@ -68,7 +68,7 @@ func (model *TakeAccountRequest) Convert() {
 
 func (model *CompleteAccountRequest) Convert() {
 	ConvertUserData(&model.UserData, model.UserIdentity)
-	model.RequestID, _ = primitive.ObjectIDFromHex(model.OrderInfo.OrderID)
+	model.RequestID, _ = primitive.ObjectIDFromHex(model.OrderID)
 }
 
 func ConvertUserData(userData *auth.UserData, userIdentity auth.UserIdentity) {

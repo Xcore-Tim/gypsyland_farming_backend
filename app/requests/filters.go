@@ -89,6 +89,9 @@ func AggregateFarmersData(requestBody *accounts.GetRequestBody) (bson.D, bson.D)
 	groupStage := bson.D{
 		{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: "$farmer"},
+			{Key: "totalSum", Value: bson.D{
+				{Key: "$sum", Value: "$baseTotal"},
+			}},
 			{Key: "price", Value: bson.D{
 				{Key: "$sum", Value: "$price"},
 			}},
@@ -118,7 +121,7 @@ func AggregateBuyersData(requestBody *accounts.GetRequestBody, teamleadID int) (
 		{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: "$buyer"},
 			{Key: "totalSum", Value: bson.D{
-				{Key: "$sum", Value: "$totalSum"},
+				{Key: "$sum", Value: "$baseTotal"},
 			}},
 			{Key: "valid", Value: bson.D{
 				{Key: "$sum", Value: "$valid"},
@@ -148,7 +151,7 @@ func AggregateTeamsData(requestBody *accounts.GetRequestBody) (bson.D, bson.D) {
 		{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: "$team"},
 			{Key: "totalSum", Value: bson.D{
-				{Key: "$sum", Value: "$totalSum"},
+				{Key: "$sum", Value: "$baseTotal"},
 			}},
 			{Key: "valid", Value: bson.D{
 				{Key: "$sum", Value: "$valid"},

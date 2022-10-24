@@ -42,7 +42,6 @@ type CreateAccountRequestBody struct {
 }
 
 type CloseOrderInfo struct {
-	OrderID     string  `json:"orderID"`
 	Valid       int     `json:"valid"`
 	Price       float64 `json:"price"`
 	CurrencyID  string  `json:"currencyID"`
@@ -51,6 +50,7 @@ type CloseOrderInfo struct {
 }
 
 type CompleteAccountRequest struct {
+	OrderID      string            `json:"orderID"`
 	UserIdentity auth.UserIdentity `json:"userIdentity"`
 	OrderInfo    CloseOrderInfo    `json:"closeOrderInfo"`
 	TotalSum     float64

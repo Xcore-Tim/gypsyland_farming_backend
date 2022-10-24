@@ -2,6 +2,7 @@ package models
 
 import (
 	global "gypsylandFarming/app/models"
+	currency "gypsylandFarming/app/models/currency"
 	teams "gypsylandFarming/app/models/teams"
 
 	auth "gypsylandFarming/app/models/authentication"
@@ -41,6 +42,7 @@ type BuyersCompletedResponse struct {
 	Status         int                `json:"status" bson:"status"`
 	Farmer         global.Employee    `json:"farmer" bson:"farmer"`
 	Team           teams.Team         `json:"team" bson:"team"`
+	Currency       currency.Currency  `json:"currency" bson:"currency"`
 	Price          float64            `json:"price" bson:"price"`
 	Valid          int                `json:"valid" bson:"valid"`
 	Total          float64            `json:"totalSum" bson:"totalSum"`

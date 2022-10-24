@@ -3,6 +3,7 @@ package models
 import (
 	global "gypsylandFarming/app/models"
 	auth "gypsylandFarming/app/models/authentication"
+	currency "gypsylandFarming/app/models/currency"
 	teams "gypsylandFarming/app/models/teams"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -27,6 +28,7 @@ type FarmersInworkResponse struct {
 	Status         int                `json:"status" bson:"status"`
 	Buyer          global.Employee    `json:"buyer" bson:"buyer"`
 	Team           teams.Team         `json:"team" bson:"team"`
+	Currency       currency.Currency  `json:"currency" bson:"currency"`
 	DenialReason   string             `json:"denialReason" bson:"denialReason"`
 	DateCreated    int64              `json:"dateCreated" bson:"dateCreated"`
 	DateUpdated    int64              `json:"dateUpdated" bson:"dateUpdated"`
@@ -40,6 +42,7 @@ type FarmersCompletedResponse struct {
 	Status         int                `json:"status" bson:"status"`
 	Buyer          global.Employee    `json:"buyer" bson:"buyer"`
 	Team           teams.Team         `json:"team" bson:"team"`
+	Currency       currency.Currency  `json:"currency" bson:"currency"`
 	Price          float64            `json:"price" bson:"price"`
 	Valid          int                `json:"valid" bson:"valid"`
 	Total          float64            `json:"totalSum" bson:"totalSum"`

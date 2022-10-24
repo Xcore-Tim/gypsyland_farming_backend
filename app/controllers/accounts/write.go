@@ -50,7 +50,7 @@ func (ctrl AccountRequestController) CreateAccountRequest(ctx *gin.Context) {
 
 	accountRequestTask.DateCreated = time.Now().Unix()
 	accountRequestTask.Description = requestBody.AccountRequestBody.Description
-	accountRequestTask.Price = requestBody.AccountRequestData.Price
+	accountRequestTask.Price = ctrl.WriteAccountRequestService.RoundFloat(requestBody.AccountRequestData.Price, 2)
 	total := float64(accountRequestTask.AccountRequest.Quantity) * accountRequestTask.Price
 	accountRequestTask.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
 
@@ -115,7 +115,7 @@ func (ctrl AccountRequestController) UpdateRequest(ctx *gin.Context) {
 	}
 
 	if accountRequestUpdate.UpdateBody.Price != originalAccountRequest.Price {
-		originalAccountRequest.Price = accountRequestUpdate.UpdateBody.Price
+		originalAccountRequest.Price = ctrl.WriteAccountRequestService.RoundFloat(accountRequestUpdate.UpdateBody.Price, 2)
 	}
 
 	total := float64(originalAccountRequest.AccountRequest.Quantity) * originalAccountRequest.Price
@@ -197,7 +197,7 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 	var accountRequestCompleted accounts.CompleteAccountRequest
 
 	if err := ctx.ShouldBindJSON(&accountRequestCompleted); err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -206,18 +206,21 @@ func (ctrl AccountRequestController) CompleteAccountRequest(ctx *gin.Context) {
 	accountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestCompleted.RequestID)
 
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	if accountRequest.Price != accountRequestCompleted.OrderInfo.Price {
-		total := float64(accountRequest.AccountRequest.Quantity) * accountRequestCompleted.OrderInfo.Price
-		accountRequest.Price = accountRequestCompleted.OrderInfo.Price
+	if accountRequest.Price != accountRequestCompleted.OrderInfo.Price && accountRequestCompleted.OrderInfo.Price != 0 {
+		accountRequest.Price = ctrl.WriteAccountRequestService.RoundFloat(accountRequestCompleted.OrderInfo.Price, 2)
+		total := float64(accountRequest.AccountRequest.Quantity) * accountRequest.Price
 		accountRequest.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
 	}
 
 	accountRequest.Valid = accountRequestCompleted.OrderInfo.Valid
 	accountRequest.Description = accountRequestCompleted.OrderInfo.Description
-	accountRequest.DownloadLink = accountRequestCompleted.OrderInfo.Link
+
+	if accountRequestCompleted.OrderInfo.Link != "" {
+		accountRequest.DownloadLink = accountRequestCompleted.OrderInfo.Link
+	}
 
 	if accountRequestCompleted.OrderInfo.CurrencyID != "" {
 
@@ -293,10 +296,14 @@ func (ctrl AccountRequestController) SetRequestCurrency(currencyID primitive.Obj
 	case "USD":
 		accountRequestTask.BaseCurrency = accountRequestTask.Currency
 		accountRequestTask.BaseCurrency.Value = 1
+		accountRequestTask.BaseTotal = accountRequestTask.TotalSum
 	default:
 		baseCurrency, _ := ctrl.CurrencyService.GetBaseCurrency()
 		baseCurrency.Value = currencyRates[baseCurrency.ISO]
 		accountRequestTask.BaseCurrency = *baseCurrency
+		baseRate := accountRequestTask.Currency.Value / accountRequestTask.BaseCurrency.Value
+		baseValue := accountRequestTask.TotalSum * baseRate
+		accountRequestTask.BaseTotal = ctrl.CurrencyRatesService.RoundFloat(baseValue, 2)
 	}
 
 	return nil
@@ -304,76 +311,5 @@ func (ctrl AccountRequestController) SetRequestCurrency(currencyID primitive.Obj
 }
 
 func (ctrl AccountRequestController) Test(ctx *gin.Context) {
-	orderID, err := primitive.ObjectIDFromHex(ctx.Query("orderID"))
-
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	var accountRequestUpdate accounts.UpdateRequestBody
-
-	if err := ctx.ShouldBindJSON(&accountRequestUpdate); err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	accountRequestUpdate.RequestID = orderID
-	accountRequestUpdate.Convert()
-
-	originalAccountRequest, err := ctrl.ReadAccountRequestService.GetRequestTask(&accountRequestUpdate.RequestID)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if accountRequestUpdate.UpdateBody.Location != "" {
-		if location, err := ctrl.LocationService.GetLocationByName(accountRequestUpdate.UpdateBody.Location); err == nil {
-			originalAccountRequest.AccountRequest.Location = *location
-		}
-	}
-
-	if accountRequestUpdate.UpdateBody.AccountType != "" {
-		if accountType, err := ctrl.AccountTypesService.GetTypeByName(accountRequestUpdate.UpdateBody.AccountType); err == nil {
-			originalAccountRequest.AccountRequest.Type = *accountType
-		}
-	}
-
-	if accountRequestUpdate.UpdateBody.Quantity != originalAccountRequest.AccountRequest.Quantity {
-		originalAccountRequest.AccountRequest.Quantity = accountRequestUpdate.UpdateBody.Quantity
-	}
-
-	if accountRequestUpdate.UpdateBody.Price != originalAccountRequest.Price {
-		originalAccountRequest.Price = accountRequestUpdate.UpdateBody.Price
-	}
-
-	total := float64(originalAccountRequest.AccountRequest.Quantity) * originalAccountRequest.Price
-	originalAccountRequest.TotalSum = ctrl.WriteAccountRequestService.RoundFloat(total, 2)
-
-	if accountRequestUpdate.UpdateBody.Currency != "" {
-		currencyID, err := primitive.ObjectIDFromHex(accountRequestUpdate.UpdateBody.Currency)
-
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		updateCurrency, err := ctrl.CurrencyService.GetCurrency(currencyID)
-
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		if updateCurrency.ID != originalAccountRequest.Currency.ID {
-			requestDate := time.Unix(originalAccountRequest.DateCreated, 0).Format("02-01-2006")
-			ctrl.SetRequestCurrency(currencyID, requestDate, originalAccountRequest)
-		}
-
-		ctx.JSON(http.StatusOK, originalAccountRequest)
-
-	}
-
 	// ctx.JSON(http.StatusOK, originalAccountRequest)
 }
