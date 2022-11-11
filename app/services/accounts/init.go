@@ -23,6 +23,11 @@ type ReadAccountRequestService interface {
 	GetBuyerCompletedRequests(*accounts.GetRequestBody, *[]accounts.BuyersCompletedResponse) error
 	GetBuyerCancelledRequests(*accounts.GetRequestBody, *[]accounts.BuyersCancelledResponse) error
 
+	GetTLFPeindingRequests(*accounts.GetRequestBody, *[]accounts.FarmersPendingResponse) error
+	GetTLFInworkRequests(*accounts.GetRequestBody, *[]accounts.FarmersInworkResponse) error
+	GetTLFCompletedRequests(*accounts.GetRequestBody, *[]accounts.FarmersCompletedResponse) error
+	GetTLFCancelledRequests(*accounts.GetRequestBody, *[]accounts.FarmersCancelledResponse) error
+
 	AggregateFarmersData(*accounts.GetRequestBody, *[]accounts.GroupedFarmersResponse) error
 	AggregateTeamsData(*accounts.GetRequestBody, *[]accounts.GroupedTeamsResponse) error
 	AggregateBuyersData(*accounts.GetRequestBody, *[]accounts.GroupedBuyersResponse, int) error

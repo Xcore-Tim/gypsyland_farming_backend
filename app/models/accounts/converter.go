@@ -82,14 +82,18 @@ func ConvertUserData(userData *auth.UserData, userIdentity auth.UserIdentity) {
 
 func ConvertPeriod(period *global.Period) {
 
+	date_format := "2006-01-02"
+
 	if period.StartISO == "" {
-		period.EndDate = time.Now()
-	} else if period.EndISO == "" {
-		period.EndDate = time.Now()
-	} else {
-		date_format := "2006-01-02"
-		period.EndDate, _ = time.Parse(date_format, period.EndISO)
-		period.StartDate, _ = time.Parse(date_format, period.StartISO)
+		period.StartISO = "1970-01-01"
 	}
 
+	period.StartDate, _ = time.Parse(date_format, period.StartISO)
+
+	if period.EndISO != "" {
+		period.EndDate, _ = time.Parse(date_format, period.EndISO)
+		return
+	}
+
+	period.EndDate = time.Now()
 }

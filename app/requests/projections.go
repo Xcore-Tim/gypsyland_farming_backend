@@ -111,7 +111,6 @@ func FarmerRequestProjection(requestBody *accounts.GetRequestBody) bson.D {
 			bson.E{Key: "price", Value: 1},
 			bson.E{Key: "valid", Value: 1},
 			bson.E{Key: "totalSum", Value: 1},
-			bson.E{Key: "team", Value: 1},
 			bson.E{Key: "downloadLink", Value: 1},
 		}
 	case 3:

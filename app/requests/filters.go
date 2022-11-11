@@ -76,6 +76,39 @@ func TeamleadRequestFilter(requestBody *accounts.GetRequestBody) bson.D {
 	return filter
 }
 
+func TeamleadFarmerRequestFilter(requestBody *accounts.GetRequestBody) bson.D {
+
+	var filter primitive.D
+
+	switch requestBody.Status {
+	case 0:
+		filter = bson.D{
+			bson.E{Key: "$and", Value: bson.A{
+				bson.D{
+					bson.E{Key: "status", Value: requestBody.Status},
+					bson.E{Key: "dateCreated", Value: bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+					bson.E{Key: "dateCreated", Value: bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+				},
+			},
+			},
+		}
+	default:
+		filter = bson.D{
+			bson.E{Key: "$and", Value: bson.A{
+				bson.D{
+					bson.E{Key: "farmer.id", Value: requestBody.UserData.UserID},
+					bson.E{Key: "status", Value: requestBody.Status},
+					bson.E{Key: "dateCreated", Value: bson.M{"$gte": requestBody.Period.StartDate.Unix()}},
+					bson.E{Key: "dateCreated", Value: bson.M{"$lte": requestBody.Period.EndDate.Unix()}},
+				},
+			},
+			},
+		}
+	}
+
+	return filter
+}
+
 func AggregateFarmersData(requestBody *accounts.GetRequestBody) (bson.D, bson.D) {
 
 	matchStage := bson.D{bson.E{Key: "$match", Value: bson.D{

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	accounts "gypsylandFarming/app/models/accounts"
+	"strconv"
 
 	"time"
 
@@ -311,5 +312,31 @@ func (ctrl AccountRequestController) SetRequestCurrency(currencyID primitive.Obj
 }
 
 func (ctrl AccountRequestController) Test(ctx *gin.Context) {
-	// ctx.JSON(http.StatusOK, originalAccountRequest)
+
+	// period := models.Period{}
+	// period.StartISO = ctx.Query("start")
+	// period.EndISO = ctx.Query("end")
+
+	// date_format := "2006-01-02"
+
+	// if period.StartISO == "" {
+	// 	period.StartISO = "1970-01-01"
+	// }
+
+	// period.StartDate, _ = time.Parse(date_format, period.StartISO)
+
+	// if period.EndISO != "" {
+	// 	period.EndDate, _ = time.Parse(date_format, period.EndISO)
+	// 	return
+	// }
+
+	// period.EndDate = time.Now()
+
+	i, err := strconv.ParseInt("1666822678", 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	tm := time.Unix(i, 0)
+	ctx.JSON(http.StatusAccepted, tm)
+
 }

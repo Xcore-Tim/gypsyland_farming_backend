@@ -21,7 +21,7 @@ func (ctrl AccountRequestController) GetAll(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, accountRequests)
+	ctx.JSON(http.StatusOK, gin.H{"response": accountRequests})
 }
 
 func (ctrl AccountRequestController) GetPendingRequests(ctx *gin.Context) {
@@ -67,6 +67,8 @@ func (ctrl AccountRequestController) GetAccountRequests(status int, ctx *gin.Con
 		ctrl.GetFarmerRequests(&requestBody, ctx)
 	case 2, 3, 4, 7:
 		ctrl.GetBuyerRequests(&requestBody, ctx)
+	case 5:
+		ctrl.GetTLFarmerRequests(&requestBody, ctx)
 	}
 }
 
@@ -143,6 +145,46 @@ func (ctrl AccountRequestController) GetFarmerRequests(requestBody *models.GetRe
 	case 3:
 		var farmersCancelledRequests []models.FarmersCancelledResponse
 		err := ctrl.ReadAccountRequestService.GetFarmerCancelledRequests(requestBody, &farmersCancelledRequests, *teamAccess)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		ctx.JSON(http.StatusOK, farmersCancelledRequests)
+	}
+
+}
+
+func (ctrl AccountRequestController) GetTLFarmerRequests(requestBody *models.GetRequestBody, ctx *gin.Context) {
+	switch requestBody.Status {
+	case 0:
+		var farmersPendingRequest []models.FarmersPendingResponse
+		if err := ctrl.ReadAccountRequestService.GetTLFPeindingRequests(requestBody, &farmersPendingRequest); err != nil {
+			ctx.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		ctx.JSON(http.StatusOK, farmersPendingRequest)
+	case 1:
+		var farmersInworkRequests []models.FarmersInworkResponse
+		if err := ctrl.ReadAccountRequestService.GetTLFInworkRequests(requestBody, &farmersInworkRequests); err != nil {
+			ctx.JSON(http.StatusBadRequest, err.Error())
+		}
+		ctx.JSON(http.StatusOK, farmersInworkRequests)
+	case 2:
+		var farmersCompletedRequests []models.FarmersCompletedResponse
+		err := ctrl.ReadAccountRequestService.GetTLFCompletedRequests(requestBody, &farmersCompletedRequests)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		for _, v := range farmersCompletedRequests {
+			v.Total = ctrl.WriteAccountRequestService.RoundFloat(v.Total, 2)
+		}
+
+		ctx.JSON(http.StatusOK, farmersCompletedRequests)
+	case 3:
+		var farmersCancelledRequests []models.FarmersCancelledResponse
+		err := ctrl.ReadAccountRequestService.GetTLFCancelledRequests(requestBody, &farmersCancelledRequests)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err.Error())
 			return
