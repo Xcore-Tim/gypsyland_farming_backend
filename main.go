@@ -73,7 +73,8 @@ func init() {
 
 	ctx = context.TODO()
 
-	mongoConnection := options.Client().ApplyURI("mongodb://localhost/27017")
+	connectionString := "mongodb://farming-mongodb:7wnnOjnZgpq4Ruprtqq5qXxsS7ZfCF8LxhHJYIZgzenmAJc3l1ZrFEsT5AuCYXjWtvGAJ6Fdfj0lACDbWPXUiw==@farming-mongodb.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&maxIdleTimeMS=120000&appName=@farming-mongodb@"
+	mongoConnection := options.Client().ApplyURI(connectionString)
 	mongoClient, err := mongo.Connect(ctx, mongoConnection)
 
 	if err != nil {
