@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	accountTypesControllers "gypsylandFarming/app/controllers/accountTypes"
 	accountControllers "gypsylandFarming/app/controllers/accounts"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -140,10 +140,11 @@ func init() {
 
 func NewCORS() cors.Config {
 	config := cors.Config{
-		AllowOrigins:     []string{"*"},
+		// AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET", "OPTIIN", "DELETE"},
 		AllowHeaders:     []string{"*"},
 		AllowCredentials: true,
+		AllowAllOrigins:  true,
 	}
 
 	return config
@@ -165,6 +166,11 @@ func main() {
 	fileController.RegisterUserRoutes(basepath)
 	currencyController.RegisterUserRoutes(basepath)
 
-	log.Fatal(server.Run(":9090"))
+	port := os.Getenv("HTPP_PLATFORM_PORT")
+
+	if port == "" {
+		port = ":9090"
+	}
+	log.Fatal(server.Run(port))
 
 }
