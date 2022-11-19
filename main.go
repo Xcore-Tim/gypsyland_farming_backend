@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	accountTypesControllers "gypsylandFarming/app/controllers/accountTypes"
 	accountControllers "gypsylandFarming/app/controllers/accounts"
@@ -167,11 +166,12 @@ func main() {
 	fileController.RegisterUserRoutes(basepath)
 	currencyController.RegisterUserRoutes(basepath)
 
-	port := os.Getenv("HTPP_PLATFORM_PORT")
+	// port := os.Getenv("HTPP_PLATFORM_PORT")
 
-	if port == "" {
-		port = ":9090"
-	}
+	// if port == "" {
+	// 	port = ":80"
+	// }
+	port := ":80"
 	log.Fatal(server.Run(port))
 
 }
