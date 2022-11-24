@@ -74,6 +74,8 @@ func init() {
 
 	connectionString := "mongodb://farming-mongodb:7wnnOjnZgpq4Ruprtqq5qXxsS7ZfCF8LxhHJYIZgzenmAJc3l1ZrFEsT5AuCYXjWtvGAJ6Fdfj0lACDbWPXUiw==@farming-mongodb.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&maxIdleTimeMS=120000&appName=@farming-mongodb@"
 	mongoConnection := options.Client().ApplyURI(connectionString)
+
+	// mongoConnection := options.Client().ApplyURI("mongodb://localhost:27017")
 	mongoClient, err := mongo.Connect(ctx, mongoConnection)
 
 	if err != nil {
@@ -133,6 +135,7 @@ func init() {
 	fileController = fileControllers.NewFileController(fileService)
 
 	server = gin.Default()
+	server.Static("/static", "./static")
 
 	server.Use(cors.New(NewCORS()))
 
@@ -166,11 +169,6 @@ func main() {
 	fileController.RegisterUserRoutes(basepath)
 	currencyController.RegisterUserRoutes(basepath)
 
-	// port := os.Getenv("HTPP_PLATFORM_PORT")
-
-	// if port == "" {
-	// 	port = ":80"
-	// }
 	port := ":80"
 	log.Fatal(server.Run(port))
 

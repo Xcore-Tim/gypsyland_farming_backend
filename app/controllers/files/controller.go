@@ -70,12 +70,13 @@ func (ctrl FileController) UploadFile(ctx *gin.Context) {
 
 	basePath := ctrl.FileService.ReturnBasePath()
 
-	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		if err := os.Mkdir(basePath, 0777); err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "error creating temporary directory"})
-			return
-		}
-	}
+	// if _, err := os.Stat(basePath); os.IsNotExist(err) {
+	// 	if err := os.Mkdir(basePath, 0777); err != nil {
+	// 		// ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "error creating temporary directory"})
+	// 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 		return
+	// 	}
+	// }
 
 	if f == nil {
 		f, err = os.OpenFile(basePath+"/"+uploadFile.Filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -139,9 +140,12 @@ func (ctrl FileController) DownloadFile(ctx *gin.Context) {
 
 	fileName := ctx.Query("filename")
 
-	downloadPath := ctrl.FileService.ReturnDownloadPath(fileName)
+	// downloadPath := ctrl.FileService.ReturnDownloadPath(fileName)
 
-	ctx.String(http.StatusOK, downloadPath)
+	ctx.String(http.StatusOK, fileName)
+	// basepath := ctrl.FileService.ReturnBasePath()
+	// filePath := basepath + "/" + fileName
+	// ctx.FileAttachment(filePath, fileName)
 
 }
 
@@ -152,9 +156,10 @@ func (ctrl FileController) CheckPreviousFile(ctx *gin.Context) {
 	host, _ := os.Hostname()
 	ctx.JSON(http.StatusAccepted, gin.H{"host": host, "filepath": oldFile, "found": isFound, "err": err})
 	ctx.JSON(http.StatusAccepted, host+"/"+oldFile)
+
 }
 
-func (ctrl FileController) DeleteFilesInDir(ctx *gin.Context) {
+func (ctrl FileController) ClearFiles(ctx *gin.Context) {
 
 	fullpath := ctrl.FileService.ReturnBasePath()
 	dir, _ := os.ReadDir(fullpath)
@@ -172,10 +177,37 @@ func (ctrl FileController) DeleteFilesInDir(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, "success")
 }
 
+func (ctrl FileController) EnlistFiles(ctx *gin.Context) {
+
+	fullpath := ctx.Query("dir")
+
+	if fullpath == "" {
+		fullpath = ctrl.FileService.ReturnBasePath()
+	}
+
+	dir, err := os.ReadDir(fullpath)
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+	}
+
+	for i := range dir {
+		file := dir[i]
+		fileName := file.Name()
+		filePath := fullpath + "/" + fileName
+		ctx.JSON(http.StatusOK, gin.H{"file": filePath})
+	}
+
+	dirr := gin.Dir("", true)
+	ctx.JSON(http.StatusOK, dirr)
+
+}
+
 func (ctrl FileController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	fileGroup := rg.Group("/file")
 	fileGroup.POST("/upload", ctrl.UploadFile)
 	fileGroup.POST("/download", ctrl.DownloadFile)
 	fileGroup.POST("/check", ctrl.CheckPreviousFile)
-	fileGroup.POST("/dir", ctrl.DeleteFilesInDir)
+	fileGroup.POST("/clear", ctrl.ClearFiles)
+	fileGroup.POST("/enlist", ctrl.EnlistFiles)
 }

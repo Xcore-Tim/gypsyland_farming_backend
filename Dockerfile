@@ -1,17 +1,12 @@
-FROM golang:1.19-apline AS builder
-
+FROM golang:alpine as builder
 WORKDIR /build
-
-COPY go.mod go.sum ./
-
+COPY go.mod go.sum static ./
 RUN go mod download
-
 COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o /main main.go
-
-EXPOSE 80
-
-ENTRYPOINT [ "./main" ]
-
-
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main main.go
+FROM scratch
+COPY --from=builder main /bin/main
+ADD static /static
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+EXPOSE 3000 80
+ENTRYPOINT ["/bin/main"]

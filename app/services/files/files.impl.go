@@ -85,11 +85,11 @@ func (srvc FileServiceImpl) UpdateDownloadLink(fileName, oid string) error {
 		return err
 	}
 
-	downloadLink := srvc.ReturnDownloadPath(fileName)
+	// downloadLink := srvc.ReturnDownloadPath(fileName)
 
 	filter := bson.D{bson.E{Key: "_id", Value: requestID}}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "downloadLink", Value: downloadLink},
+		bson.E{Key: "downloadLink", Value: fileName},
 		bson.E{Key: "fileName", Value: fileName},
 	}}}
 
@@ -114,14 +114,14 @@ func (srvc FileServiceImpl) DeleteFilesInDir() error {
 
 func (srvc FileServiceImpl) ReturnBasePath() string {
 
-	basepath := "/var/www/html/react/downloads"
+	basepath := "/static"
 
 	return basepath
 }
 
 func (srvc FileServiceImpl) ReturnDownloadPath(fileName string) string {
 
-	basepath := "http://84.201.138.62/downloads/"
+	basepath := "http://localhost/static/"
 	downloadPath := basepath + fileName
 
 	return downloadPath
